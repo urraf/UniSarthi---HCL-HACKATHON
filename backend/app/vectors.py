@@ -43,7 +43,9 @@ _keyword_index = None  # BM25 index over all chunks, rebuilt when documents chan
 
 def _embedding_function(model_name: str):
     """PyTorch sentence-transformers, or ChromaDB's ONNX copy of all-MiniLM-L6-v2 (same model, far less memory)."""
-    if config.EMBED_BACKEND == "onnx":
+    import importlib.util
+    # Use ONNX when asked, or automatically when PyTorch/sentence-transformers is not installed (e.g. on Render)
+    if config.EMBED_BACKEND == "onnx" or importlib.util.find_spec("sentence_transformers") is None:
         if not model_name.endswith("all-MiniLM-L6-v2"):
             raise ValueError("EMBED_BACKEND=onnx only supports sentence-transformers/all-MiniLM-L6-v2")
         from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
