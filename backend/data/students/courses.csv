@@ -1,9 +1,11 @@
-course_code,course_name,programme,semester,credits
-CS101,Programming in C,B.Tech CSE,2,4
-MA101,Engineering Mathematics II,B.Tech CSE,2,4
-CS201,Data Structures,B.Tech CSE,4,4
-CS202,Database Management Systems,B.Tech CSE,4,4
-EC101,Basic Electronics,B.Tech ECE,2,4
-MA102,Engineering Mathematics II,B.Tech ECE,2,4
-EC201,Signals and Systems,B.Tech ECE,4,4
-EC202,Digital Electronics,B.Tech ECE,4,4
+course_code,course_name,programme,semester,credits,course_type
+ITITC302,Database Management Systems,B.Tech IT,3,4,Theory
+ITITC304,Advance Programming,B.Tech IT,3,4,Theory
+ITITC501,Theory of Computation,B.Tech IT,5,4,Theory
+ITITC503,Artificial Intelligence,B.Tech IT,5,4,Theory
+ITITC504,Mobile Computing,B.Tech IT,5,4,Theory
+COCSC302,Database Management Systems,B.Tech CSE,3,4,Theory
+COCSC303,Design and Analysis of Algorithms,B.Tech CSE,3,4,Theory
+COCSC501,Computer Networks,B.Tech CSE,5,4,Theory
+COCSC503,Soft Computing,B.Tech CSE,5,4,Theory
+COCSC504,Information and Data Security,B.Tech CSE,5,4,Theory

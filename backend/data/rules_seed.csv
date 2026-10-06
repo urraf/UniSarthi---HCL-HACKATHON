@@ -1,9 +1,23 @@
-rule_id,description,parameter,operator,value,scope_programmes,scope_batches,effective_from,effective_to,source_doc_id,source_section
-ATT-MIN-01,Minimum attendance in each course to appear in the end-semester exam,min_attendance_pct,>=,75,ALL,ALL,2024-07-01,,ACAD-REG-2024,7.2
-ATT-MIN-02,Minimum attendance in each course to appear in the end-semester exam,min_attendance_pct,>=,80,ALL,ALL,2026-08-01,,ACAD-2026-08,1
-ATT-MIN-03,Minimum attendance in each course to appear in the end-semester exam,min_attendance_pct,>=,65,ALL,ALL,2026-09-15,,FAQ-2026,Q3
-PASS-01,Minimum total marks (percent of maximum) to pass a course,pass_marks_pct,>=,40,ALL,ALL,2024-07-01,,ACAD-REG-2024,9.2
-SUPP-01,Results that allow a student to take the supplementary exam,supplementary_allowed_results,in,FAIL;ABSENT,ALL,ALL,2024-07-01,,ACAD-REG-2024,10.2
-PLC-CGPA-01,Minimum CGPA to register for campus placements,placement_min_cgpa,>=,6.5,ALL,ALL,2025-07-01,,PLACE-POL-2025,3.1
-PLC-BKL-01,Maximum active backlogs allowed to register for campus placements,placement_max_backlogs,<=,0,ALL,ALL,2025-07-01,,PLACE-POL-2025,3.2
-PLC-CGPA-02,Minimum CGPA to register for campus placements,placement_min_cgpa,>=,7.0,ALL,2024+,2026-12-01,,PLACE-2026-11,1
+rule_id,description,parameter,operator,value,scope_programmes,scope_batches,effective_from,effective_to,source_doc_id,source_section,verified
+ATT-MIN-01,"Minimum attendance (lectures+tutorials+practicals, per subject) needed to appear in MSE/ESE",min_attendance_pct,>=,75,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 11.2 (PDF p.18),VERIFIED
+ATT-REL-01,Dean Academics may relax attendance by up to 10 percentage points on documented grounds,attendance_relaxation_pct,<=,10,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 11.3 (PDF p.18),VERIFIED
+ATT-REL-02,Further relaxation up to 5 percentage points in exceptional circumstances,attendance_extra_relaxation_pct,<=,5,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 11.4 (PDF p.18),VERIFIED
+ATT-REL-03,Maximum number of attendance relaxations in the whole programme,max_relaxations,<=,2,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 11.5 (PDF p.18),VERIFIED
+ATT-FLOOR-01,Not permitted to appear in MSE/ESE if attendance is below this value even after relaxation,attendance_floor_pct,>=,60,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 11.6 (PDF p.18),VERIFIED
+ATT-NOCONDONE-01,No shortage-of-attendance condonation at MSE; no relaxation claims at ESE; below 75% = detained from ESE,min_attendance_pct,>=,75,ALL,ALL,2026-09-15,,ACAD-ATT-2026,"Para 1 (p.1, scanned)",VERIFIED
+PASS-ESE-01,Minimum share of ESE marks (theory and practical separately) to pass a course,min_ese_pct,>=,30,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 12.7 (PDF p.19),VERIFIED
+PASS-GRADE-D-01,Absolute grading (class size <= 30): minimum total marks for lowest passing grade D,min_total_marks_pct_for_D,>=,35,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Table 5 (PDF p.15-16); Table 3 (p.14),REPORTED (D>=35 not re-read; O>=90..B>=54 VERIFIED)
+SUPP-01,No supplementary examinations; failed course must be re-registered (as amended by Exam-Only Mode / make-up exam circulars),supplementary_allowed,=,false,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 12.3 (PDF p.19),VERIFIED
+PROMO-01,Promotion odd->even semester has no restriction,promotion_odd_to_even_restricted,=,false,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 12.1,REPORTED
+DEGREE-CREDITS-01,Credits to be earned for the B.Tech degree (out of 170 registered),min_credits_degree,>=,162,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 7.8 (PDF p.11); Cl. 15.1 (p.20),VERIFIED
+DEGREE-CGPA-01,Minimum CGPA for award of B.Tech degree,min_cgpa_degree,>=,5.00,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 15.1 (PDF p.20),VERIFIED
+HONOURS-CGPA-01,Minimum CGPA for B.Tech (Honours),min_cgpa_honours,>=,8.50,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 7.9 / 15.4,REPORTED
+DIV-FIRST-01,Minimum CGPA for First Division,min_cgpa_first_division,>=,6.50,B.Tech,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 15,REPORTED
+CGPA-PCT-01,Percentage of marks = CGPA multiplied by 10,cgpa_to_pct_multiplier,=,10,ALL,ALL,2019-07-01,,NSUT-BTECH-REG-2019,Cl. 9.7(d) (PDF p.17),VERIFIED
+SUMMER-MAXCOURSES-01,"Summer semester: max backlog/improvement courses (2026: 5 in total, at most 2 in Study Mode)",summer_max_courses,<=,5,ALL,ALL,2026-05-08,,DEAN-SUMMER-2026,Para on course limit (scanned),REPORTED
+SUMMER-ATT-01,Summer semester Study Mode: 75% attendance with no relaxation,min_attendance_pct,>=,75,ALL,ALL,2026-05-08,,DEAN-SUMMER-2026,Attendance clause (scanned),REPORTED
+REREG-FEE-01,Re-registration fee per subject in a regular semester (INR),reregistration_fee_inr,=,7000,B.Tech,2026+,2026-05-14,,FEE-2026-27,Cl. 13 (scanned),REPORTED
+SUMMER-FEE-SM-01,"Summer semester fee per paper, Study Mode (INR)",summer_fee_study_mode_inr,=,14000,ALL,ALL,2026-05-08,,DEAN-SUMMER-2026,Fee clause (scanned),REPORTED
+SUMMER-FEE-EOM-01,"Summer semester fee per paper, Exam-Only Mode (INR)",summer_fee_eom_inr,=,10000,ALL,ALL,2026-05-08,,DEAN-SUMMER-2026,Fee clause (scanned),REPORTED
+PLACE-DROP-01,Final-year students may drop at most this many active backlogs for placement CGPA purposes,max_dropped_backlogs,<=,2,B.Tech,ALL,2024-07-01,2025-06-30,TNP-POLICY-2024-25,Drop Subject Rules (PDF p.11),VERIFIED
+PLACE-CGPA-01,No university-wide minimum CGPA for placement; each company sets its own,univ_min_cgpa_placement,=,none,B.Tech,ALL,2024-07-01,2025-06-30,TNP-POLICY-2024-25,Eligibility (PDF p.4),VERIFIED

@@ -35,7 +35,9 @@ def covers(item: dict, student: dict | None) -> bool:
     if student is None:
         return True
     programmes = _split(item.get("scope_programmes")) or ["ALL"]
-    if "ALL" not in programmes and student["programme"] not in programmes:
+    # "B.Tech" covers "B.Tech IT" and "B.Tech CSE"
+    if "ALL" not in programmes and not any(student["programme"] == p or student["programme"].startswith(p + " ")
+                                           for p in programmes):
         return False
     batches = _split(item.get("scope_batches")) or ["ALL"]
     if "ALL" in batches:

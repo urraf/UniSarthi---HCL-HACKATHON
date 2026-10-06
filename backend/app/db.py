@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS students (
     current_semester INTEGER NOT NULL,      -- 1-10
     cgpa             REAL NOT NULL,         -- 0.00-10.00
     active_backlogs  INTEGER NOT NULL,      -- >= 0
-    roll_number      TEXT UNIQUE            -- our extra column: university roll number, e.g. 2023UIT3015
+    roll_number      TEXT UNIQUE,           -- extra: university roll number, e.g. 2023UIT3015 (CSV column roll_no)
+    email            TEXT                   -- extra: institute email (synthetic)
 );
 
 CREATE TABLE IF NOT EXISTS courses (
@@ -27,7 +28,8 @@ CREATE TABLE IF NOT EXISTS courses (
     course_name TEXT NOT NULL,
     programme   TEXT NOT NULL,              -- must match students.programme
     semester    INTEGER NOT NULL,
-    credits     INTEGER NOT NULL
+    credits     INTEGER NOT NULL,
+    course_type TEXT                        -- extra: Theory / Lab / Theory+Lab
 );
 
 CREATE TABLE IF NOT EXISTS attendance (
@@ -43,11 +45,12 @@ CREATE TABLE IF NOT EXISTS results (
     course_code    TEXT NOT NULL REFERENCES courses(course_code),
     exam_session   TEXT NOT NULL,           -- e.g. 2026-MAY
     exam_type      TEXT NOT NULL,           -- REGULAR or SUPPLEMENTARY
-    internal_marks INTEGER NOT NULL,
-    external_marks INTEGER NOT NULL,
-    total_marks    INTEGER NOT NULL,        -- = internal + external
+    internal_marks INTEGER,                 -- empty for ABSENT / DETAINED
+    external_marks INTEGER,
+    total_marks    INTEGER,                 -- = internal + external
     max_marks      INTEGER NOT NULL,        -- e.g. 100
     result         TEXT NOT NULL,           -- PASS, FAIL, ABSENT or DETAINED
+    grade          TEXT,                    -- extra: letter grade (NSUT grading table)
     PRIMARY KEY (student_id, course_code, exam_session, exam_type)
 );
 

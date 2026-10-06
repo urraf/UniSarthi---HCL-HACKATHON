@@ -55,16 +55,41 @@ def load_rules() -> int:
     return len(rules)
 
 
+CHUNKS_FILE = config.DATA_DIR / "chunks" / "nsut_chunks.jsonl"
+
+
+def load_prepared_chunks() -> dict[str, list[dict]]:
+    """Chunks prepared by our document pipeline (PyMuPDF text, OCR for scanned pages, clause-aware
+    splitting), exported from its ChromaDB. Grouped by doc_id."""
+    import json
+    by_doc: dict[str, list[dict]] = {}
+    if CHUNKS_FILE.exists():
+        for line in CHUNKS_FILE.read_text().splitlines():
+            c = json.loads(line)
+            c["metadata"]["page"] = int(c["metadata"]["page"]) if str(c["metadata"].get("page", "")).isdigit() else None
+            by_doc.setdefault(c["metadata"]["doc_id"], []).append(c)
+    return by_doc
+
+
 def ingest_registered_documents(docs: list[dict]) -> None:
-    """Put every registered document into ChromaDB, skipping ones already there."""
+    """Put every registered document into ChromaDB, skipping ones already there.
+    Prepared chunks are used when available; otherwise the file is parsed by app/ingest.py."""
     from app import vectors
     from app.ingest import DocumentMeta, ingest_document
 
+    prepared = load_prepared_chunks()
     for d in docs:
         existing = vectors.count_chunks(d["doc_id"])
         if existing:
             db.execute("UPDATE documents SET chunks_indexed = ? WHERE doc_id = ?", (existing, d["doc_id"]))
             print(f"  {d['doc_id']}: already indexed ({existing} chunks), skipped")
+            continue
+        if d["doc_id"] in prepared:
+            chunks = prepared[d["doc_id"]]
+            vectors.collection().add(ids=[c["id"] for c in chunks], documents=[c["text"] for c in chunks],
+                                     metadatas=[{k: ("" if v is None else v) for k, v in c["metadata"].items()} for c in chunks])
+            db.execute("UPDATE documents SET chunks_indexed = ? WHERE doc_id = ?", (len(chunks), d["doc_id"]))
+            print(f"  {d['doc_id']}: {len(chunks)} prepared chunks")
             continue
         meta = DocumentMeta(**{k: d[k] for k in DocumentMeta.model_fields})
         data = (config.DATA_DIR / "docs" / d["file_name"]).read_bytes()
@@ -78,7 +103,7 @@ def main() -> None:
     docs = load_source_register()
     print(f"Documents registered: {len(docs)}")
     print(f"Rules loaded: {load_rules()}")
-    print(f"Students loaded: {load_folder(config.DATA_DIR / 'students', our_data=True)}")
+    print(f"Students loaded: {load_folder(config.DATA_DIR / 'students')}")
     print("Indexing documents in ChromaDB (first run downloads the embedding model):")
     ingest_registered_documents(docs)
 

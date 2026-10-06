@@ -37,14 +37,14 @@ Every member owns the files below, pushes them from their own GitHub account, an
 | `backend/app/pipeline/graph.py` | LangGraph wiring: steps, branches, stop-to-finalize |
 | `backend/app/pipeline/understand.py` | Step 2: LLM labels the question (+ keyword fallback) |
 | `backend/app/pipeline/answer.py` | Step 5: LLM writes the answer from evidence only |
-| `backend/scripts/generate_students.py`, `backend/scripts/validate_data.py`, `backend/data/prompts/`, `backend/data/students/` | Synthetic data kit (LLM generation, Pydantic enforcement, validator) |
+| `backend/scripts/generate_students.py`, `backend/scripts/validate_data.py`, `backend/data/prompts/`, `backend/data/students/`, `backend/data/team_schema.sql` | Synthetic student data kit and SQL schema (from the team data repo) |
 | `docs/DATA_CARD.md` | Synthetic data card |
 
 ## Anish: sources + ChromaDB embeddings + find step + evaluation
 
 | Files | What it is |
 |---|---|
-| `backend/data/docs/`, `backend/data/source_register.csv` | The documents and the Source Register (Annex B) |
+| `backend/data/docs/`, `backend/data/source_register.csv`, `backend/data/POLICY_INDEX.md`, `backend/data/chunks/nsut_chunks.jsonl`, `backend/data/rules_seed.csv` | Collected the 24 NSUT documents, Source Register, rule registry, OCR + clause-aware chunking and embeddings (team repo anish295/HCL-Database) |
 | `backend/app/vectors.py` | ChromaDB: persisted collection, embeddings, search |
 | `backend/app/ingest.py` | Parse PDF/MD/TXT, split by section, injection filter, embed, rule extraction for live documents |
 | `backend/scripts/seed.py` | Builds everything from `data/` (skips documents already indexed) |

@@ -25,20 +25,20 @@ from scripts.seed import load_rules, load_source_register  # noqa: E402
 
 TEST_STUDENTS = [
     # id, name, programme, batch, semester, cgpa, backlogs, roll number
-    ("S0001", "Test Exact", "B.Tech CSE", 2024, 5, 6.5, 0, "2024UCS0001"),
-    ("S0002", "Test Below", "B.Tech CSE", 2024, 5, 8.0, 1, "2024UCS0002"),
-    ("S0003", "Test Detained", "B.Tech CSE", 2025, 3, 7.0, 1, "2025UCS0003"),
+    ("S0001", "Test Exact", "B.Tech IT", 2023, 7, 6.5, 0, "2023UIT0001"),
+    ("S0002", "Test Short", "B.Tech IT", 2023, 7, 8.0, 3, "2023UIT0002"),
+    ("S0003", "Test Floor", "B.Tech IT", 2024, 5, 7.0, 1, "2024UIT0003"),
 ]
-TEST_COURSES = [("TC201", "Test Course A", "B.Tech CSE", 4, 4), ("TC202", "Test Course B", "B.Tech CSE", 4, 4)]
+TEST_COURSES = [("TC201", "Test Course A", "B.Tech IT", 5, 4), ("TC202", "Test Course B", "B.Tech IT", 5, 4)]
 TEST_ATTENDANCE = [
-    ("S0001", "TC201", 50, 40),  # exactly 80%
-    ("S0002", "TC201", 50, 39),  # one class below 80% (78%), but above 75%
-    ("S0003", "TC201", 40, 24),  # 60%
+    ("S0001", "TC201", 40, 30),  # exactly 75%
+    ("S0002", "TC201", 40, 29),  # one class below 75% (72.5%), above the 60% floor
+    ("S0003", "TC201", 40, 23),  # 57.5%: below the 60% floor
 ]
 TEST_RESULTS = [
-    ("S0001", "TC201", "2026-MAY", "REGULAR", 30, 40, 70, 100, "PASS"),
-    ("S0002", "TC202", "2026-MAY", "REGULAR", 15, 24, 39, 100, "FAIL"),
-    ("S0003", "TC201", "2026-MAY", "REGULAR", 20, 0, 20, 100, "DETAINED"),
+    ("S0001", "TC201", "2025-DEC", "REGULAR", 30, 40, 70, 100, "PASS"),
+    ("S0002", "TC202", "2025-DEC", "REGULAR", 15, 19, 34, 100, "FAIL"),
+    ("S0003", "TC201", "2025-DEC", "REGULAR", None, None, None, 100, "DETAINED"),
 ]
 
 
@@ -48,8 +48,11 @@ def test_db():
     load_source_register()
     load_rules()
     with db.connect() as conn:
-        conn.executemany("INSERT INTO students VALUES (?,?,?,?,?,?,?,?)", TEST_STUDENTS)
-        conn.executemany("INSERT INTO courses VALUES (?,?,?,?,?)", TEST_COURSES)
+        conn.executemany("INSERT INTO students (student_id, full_name, programme, batch_year, current_semester, "
+                         "cgpa, active_backlogs, roll_number) VALUES (?,?,?,?,?,?,?,?)", TEST_STUDENTS)
+        conn.executemany("INSERT INTO courses (course_code, course_name, programme, semester, credits) "
+                         "VALUES (?,?,?,?,?)", TEST_COURSES)
         conn.executemany("INSERT INTO attendance VALUES (?,?,?,?)", TEST_ATTENDANCE)
-        conn.executemany("INSERT INTO results VALUES (?,?,?,?,?,?,?,?,?)", TEST_RESULTS)
+        conn.executemany("INSERT INTO results (student_id, course_code, exam_session, exam_type, internal_marks, "
+                         "external_marks, total_marks, max_marks, result) VALUES (?,?,?,?,?,?,?,?,?)", TEST_RESULTS)
     yield

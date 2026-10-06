@@ -1,7 +1,7 @@
 """
 Compare two embedding models and two top-k values on RETRIEVAL only (no LLM needed).
 
-For every eval question that has an expected source, we check whether that document+section
+For every eval question that has an expected source, we check whether that document
 is among the top-k chunks returned by ChromaDB.
   - hit@k:  expected chunk found in the top k
   - MRR:    1 / rank of the expected chunk (higher = it ranks nearer the top)
@@ -25,7 +25,7 @@ K_VALUES = [3, 5]
 
 
 def main() -> None:
-    questions = [q for q in json.loads((HERE / "questions.json").read_text()) if q.get("expected_section")]
+    questions = [q for q in json.loads((HERE / "questions.json").read_text()) if q.get("expected_doc")]
     source = vectors.collection().get()  # all chunks of the main collection
 
     rows = []
@@ -39,8 +39,7 @@ def main() -> None:
         ranks = []
         for q in questions:
             hits = vectors.search(q["question"], k=max(K_VALUES), coll=coll)
-            found = [i + 1 for i, h in enumerate(hits)
-                     if h["doc_id"] == q["expected_doc"] and h["section"] == q["expected_section"]]
+            found = [i + 1 for i, h in enumerate(hits) if h["doc_id"] == q["expected_doc"]]
             ranks.append(found[0] if found else None)
 
         row = {"model": model}
@@ -51,7 +50,7 @@ def main() -> None:
         print(row)
 
     lines = ["# Retrieval comparison", "",
-             f"{len(questions)} eval questions with an expected document + section. Same chunks for both models.", "",
+             f"{len(questions)} eval questions with an expected document. Same chunks for both models.", "",
              "| Embedding model | " + " | ".join(f"hit@{k}" for k in K_VALUES) + " | MRR |",
              "|---|" + "---|" * (len(K_VALUES) + 1),
              *[f"| {r['model']} | " + " | ".join(f"{r[f'hit@{k}']:.0%}" for k in K_VALUES) + f" | {r['MRR']:.2f} |" for r in rows],

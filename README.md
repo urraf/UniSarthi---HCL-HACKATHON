@@ -106,36 +106,34 @@ curl localhost:8000/health
 
 `backend/app/precedence.py`. **1** Applicability (in force on `as_of_date`, scope covers the student's programme and batch) → **2** explicit supersession by a level 1-2 document → **3** higher authority → **4** newer → **5** otherwise `conflict_flagged`, cite both. Level 5 (unofficial) never wins. Thresholds are read from `rule_registry` at every call. A new circular adds a new rule row and the policy decides.
 
+## Data
+
+- **Documents:** 24 official NSUT documents (regulations, ordinances, circulars, notices, calendars, fee and hostel notices, placement policy), several of them scanned. Listed in `backend/data/source_register.csv` with provenance URLs; overview in `backend/data/POLICY_INDEX.md`.
+- **Chunks:** 596 clause-aware chunks (PyMuPDF text, RapidOCR for scanned pages, xlsx rows) prepared by our document pipeline in the team data repo [anish295/HCL-Database](https://github.com/anish295/HCL-Database) and exported to `backend/data/chunks/nsut_chunks.jsonl`. `seed.py` loads them into ChromaDB with the same `all-MiniLM-L6-v2` model. New documents uploaded live go through `app/ingest.py`.
+- **Rule registry:** 22 rules, each citing a document and clause (`backend/data/rules_seed.csv`).
+- **Students:** 32 synthetic students (B.Tech IT / CSE, batches 2023 / 2024) with deliberate edge cases (`backend/data/students/`, `edge_cases.csv`, `docs/DATA_CARD.md`). Validated by `scripts/validate_data.py`.
+
 ## Evaluation
 
-29 questions (`eval/questions.json`): 7 policy, 4 unanswerable, 4 version/conflict, 6 personal via tools, 3 other-student attempts, 3 multi-step / what-if, 1 clarification, 1 prompt injection. Method: automatic exact/keyword matching, no LLM judge (`eval/run_eval.py`).
+27 questions (`eval/questions.json`) on the NSUT corpus: 7 policy, 4 unanswerable, 3 version/conflict (incl. an expired placement policy), 6 personal via tools, 3 other-student attempts, 2 multi-step / what-if, 1 clarification, 1 prompt injection. Method: automatic exact/keyword matching, no LLM judge.
 
-| Metric | MiniLM (final) | bge-small |
-|---|---|---|
-| Answer correctness | 100% (29/29) | 97% (28/29) |
-| Citation accuracy | 100% (20/20) | 100% (20/20) |
-| Abstention accuracy | 100% | 100% |
-| Tool-result correctness | 100% (9/9) | 100% (9/9) |
-| Retrieval hit rate@k | 100% | 100% |
-| Latency p50 / p95 | 7.3 s / 12.8 s | 11.3 s / 17.1 s |
-| LLM calls / tokens per question | 1.59 / 1135 | 1.62 / 1314 |
+```bash
+cd backend && .venv/bin/python ../eval/run_eval.py --label final --pause 8     # -> eval/report_final.md
+.venv/bin/python ../eval/compare_retrieval.py                                 # embedding comparison
+```
 
-Retrieval-only comparison (`eval/retrieval_comparison.md`): MiniLM hit@3 100%, MRR 0.74 vs bge-small hit@3 92%, MRR 0.72. MiniLM also separates answerable (top similarity ≥ 0.58) from unanswerable (≤ 0.47) questions more cleanly, so `MIN_SIMILARITY=0.50`.
-
-**Before submission:** re-run `cd backend && .venv/bin/python ../eval/run_eval.py --label final --pause 8` (writes `eval/report_final.md`). The MiniLM numbers above are from our 6 Oct run; its report file was overwritten by a later run that hit the Groq free-tier limit (8,000 tokens/min), so it must be regenerated.
-
-Honest notes: the threshold was tuned on this same question set, so unseen questions may score lower. Latency is dominated by Groq free-tier rate limiting when 29 questions run back to back; a single question in the UI usually takes 1-3 s.
+Results: `eval/report_final.md`. The `--pause` keeps us under the Groq free tier (8,000 tokens/minute).
 
 ## Assumptions
 
-- The sample documents in `backend/data/docs` are stand-ins marked `synthetic: Y`. They must be replaced by our university's public documents (update `source_register.csv` and `rules_seed.csv` with the real clauses).
-- Attendance and results in the synthetic data are for the semester that just ended.
-- A what-if "if I pass the supplementary" assumes the CGPA stays the same (the new grade is unknown). A DETAINED course cannot be cleared by a supplementary exam.
+- Student records are synthetic (no real student data); roll numbers follow the NSUT format but are invented.
+- The 2024-25 placement policy is the latest public one and expired on 2025-06-30, so placement questions after that date are answered as "undetermined" with that reason.
+- A what-if "if I clear course X" assumes the CGPA stays the same (the new grade is unknown).
 - Rule extraction on live ingest only recognises parameters that already exist in the rule registry.
 
 ## Limitations and known edge cases
 
-- No OCR: scanned PDFs without a text layer are rejected with a clear error.
+- Live `/ingest` has no OCR (scanned PDFs without a text layer are rejected); the shipped corpus was OCR'd by the data pipeline.
 - Section detection relies on numbered headings ("7.2 ...", "Q3 ..."); documents without numbering are cited by page only.
 - Conflicts on topics without a registry rule are noticed by the LLM, but the winner is still chosen by code (authority, then date).
 - If the LLM is unavailable, keyword rules and template answers are used, and the audit record shows `llm_fallback_used: true`.

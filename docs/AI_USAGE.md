@@ -16,9 +16,9 @@ How we verified it:
 
 | Where | Model | What it does |
 |---|---|---|
-| Answering questions (`pipeline/understand.py`, `pipeline/answer.py`) | Groq `qwen/qwen3.8-27b` (cloud), switchable to Ollama `qwen2.5:7b-instruct` (local) with `LLM_PROVIDER` | Labels the question; writes the answer from given evidence and tool results |
+| Answering questions (`pipeline/understand.py`, `pipeline/answer.py`) | Groq `qwen/qwen3.8-27b` (cloud), switchable to Ollama `qwen2.5:7b-instruct` (local) with `LLM_PROVIDER` | Labels the question, rewrites it for search; writes the answer from given evidence and tool results |
 | Rule extraction on live ingest (`ingest.py`) | same | Proposes rule rows; kept only if the value appears verbatim in the cited section |
-| Synthetic data (`scripts/generate_students.py`) | Ollama `qwen2.5:7b-instruct` (local) | Generated the 32 synthetic students, see `docs/DATA_CARD.md` |
+| Synthetic students (`scripts/generate_students.py`) | Claude in Claude Code wrote the seeded generator; rows come from the script | See `docs/DATA_CARD.md` |
 
 **Cloud LLM disclosure (guide section 5):** the default `LLM_PROVIDER=groq` uses a cloud model. Setting `LLM_PROVIDER=ollama` in `backend/.env` switches to the local Ollama model with no code change. No real student data exists in the system, so no personal data is sent to the cloud.
 

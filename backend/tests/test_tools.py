@@ -1,61 +1,58 @@
-"""Tests for the deterministic tools, using the edge-case students from conftest.py."""
+"""Tests for the deterministic tools against NSUT's real rule registry (see data/rules_seed.csv)."""
 from app import tools
 
-TODAY = "2026-10-06"          # circular ACAD-2026-08 (80%) is in force
-BEFORE_CIRCULAR = "2026-07-15"  # regulation clause 7.2 (75%) is in force
+TODAY = "2026-10-06"
+PLACEMENT_SEASON = "2025-03-01"  # inside the 2024-25 placement policy (it expired on 2025-06-30)
 
 
 def test_attendance_is_computed_not_stored():
-    att = tools.get_attendance("S0002", "TC201")
-    assert att["attendance_pct"] == 78.0
+    assert tools.get_attendance("S0002", "TC201")["attendance_pct"] == 72.5
 
 
-def test_exactly_at_threshold_is_eligible():
+def test_exactly_75_percent_is_eligible():
     res = tools.check_exam_eligibility("S0001", "TC201", TODAY)
     assert res["result"] == "ELIGIBLE"
-    assert res["rule"]["rule_id"] == "ATT-MIN-02"
+    assert res["rule"]["value"] == "75"
 
 
-def test_one_class_below_threshold_is_not_eligible():
-    assert tools.check_exam_eligibility("S0002", "TC201", TODAY)["result"] == "NOT_ELIGIBLE"
+def test_one_class_below_75_is_not_eligible_but_relaxation_is_mentioned():
+    res = tools.check_exam_eligibility("S0002", "TC201", TODAY)
+    assert res["result"] == "NOT_ELIGIBLE"
+    assert "relax" in res["note"]
 
 
-def test_same_student_was_eligible_before_the_circular():
-    res = tools.check_exam_eligibility("S0002", "TC201", BEFORE_CIRCULAR)
-    assert res["result"] == "ELIGIBLE"
-    assert res["rule"]["rule_id"] == "ATT-MIN-01"
+def test_below_the_60_percent_floor_no_relaxation():
+    res = tools.check_exam_eligibility("S0003", "TC201", TODAY)
+    assert res["result"] == "NOT_ELIGIBLE"
+    assert "floor" in res["below_floor"]
 
 
-def test_failed_student_can_take_supplementary():
-    assert tools.check_supplementary_eligibility("S0002", "TC202", TODAY)["result"] == "ELIGIBLE"
+def test_no_supplementary_exam_at_nsut():
+    assert tools.check_supplementary_eligibility("S0002", "TC202", TODAY)["result"] == "NOT_AVAILABLE"
 
 
-def test_detained_student_cannot_take_supplementary():
-    assert tools.check_supplementary_eligibility("S0003", "TC201", TODAY)["result"] == "NOT_ELIGIBLE"
-
-
-def test_passed_course_needs_no_supplementary():
+def test_passed_course_needs_nothing():
     assert tools.check_supplementary_eligibility("S0001", "TC201", TODAY)["result"] == "NOT_NEEDED"
 
 
-def test_cgpa_exactly_at_cutoff_is_eligible_for_placement():
-    assert tools.check_placement_eligibility("S0001", TODAY)["result"] == "ELIGIBLE"
+def test_placement_no_cgpa_minimum_and_no_backlogs():
+    res = tools.check_placement_eligibility("S0001", PLACEMENT_SEASON)
+    assert res["result"] == "ELIGIBLE"
+    assert "no university-wide minimum" in res["cgpa_required"]
 
 
-def test_upcoming_cgpa_rule_applies_after_its_date():
-    # PLACE-2026-11 raises the cut-off to 7.0 for batch 2024+ from 2026-12-01
-    assert tools.check_placement_eligibility("S0001", "2026-12-15")["result"] == "NOT_ELIGIBLE"
+def test_placement_too_many_backlogs():
+    assert tools.check_placement_eligibility("S0002", PLACEMENT_SEASON)["result"] == "NOT_ELIGIBLE"  # 3 > 2
 
 
-def test_what_if_passing_the_supplementary_clears_the_backlog():
-    assert tools.check_placement_eligibility("S0002", TODAY)["result"] == "NOT_ELIGIBLE"
-    what_if = tools.check_placement_eligibility("S0002", TODAY, assume_cleared=["TC202"])
+def test_what_if_clearing_one_backlog_makes_placement_possible():
+    what_if = tools.check_placement_eligibility("S0002", PLACEMENT_SEASON, assume_cleared=["TC202"])
+    assert what_if["active_backlogs_used"] == 2
     assert what_if["result"] == "ELIGIBLE"
     assert what_if["assumptions"]
 
 
-def test_what_if_cannot_clear_a_detained_course():
-    # S0003 is DETAINED in TC201: no supplementary allowed, so the backlog stays
-    what_if = tools.check_placement_eligibility("S0003", TODAY, assume_cleared=["TC201"])
-    assert what_if["active_backlogs_used"] == 1
-    assert what_if["result"] == "NOT_ELIGIBLE"
+def test_placement_policy_expired_today():
+    res = tools.check_placement_eligibility("S0001", TODAY)
+    assert res["result"] == "UNDETERMINED"
+    assert "expired" in res["reason"]

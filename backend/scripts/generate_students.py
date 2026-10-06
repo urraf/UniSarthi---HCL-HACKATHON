@@ -1,185 +1,207 @@
-"""
-Generate synthetic student data with an LLM, in the guide's fixed schema (Annex C).
+"""Generate the synthetic student dataset (Annex C schema) into data/synthetic/.
 
-How it works:
-  1. Read the plan (data/prompts/generation_plan.json): programmes, batches, courses, edge cases.
-  2. For each group of 8 students, fill the prompt template and ask the LLM for JSON.
-  3. Check the JSON with Pydantic. If it is invalid, tell the LLM what was wrong and retry.
-  4. Code (not the LLM) computes the derived fields: total_marks and active_backlogs.
-  5. Write CSV files to data/students/ and a log of every fix to generation_log.json.
+Deterministic (seeded). 32 students, 2 programmes (B.Tech IT, B.Tech CSE), 2 batches
+(2023, 2024), 10 real NSUT NEP course codes. All names/roll numbers are fabricated.
+Edge cases are placed deliberately and listed in EDGE_CASES (also written to
+data/synthetic/edge_cases.csv for the data card).
 
-Run:  python scripts/generate_students.py
+Run:  python scripts/generate_students.py && python scripts/validate_data.py --dir data/synthetic
 """
 import csv
-import json
-import sys
+import random
 from pathlib import Path
-from string import Template
-from typing import Literal
 
-from pydantic import BaseModel, Field, ValidationError, model_validator
+OUT = Path(__file__).resolve().parent.parent / "data" / "students"
+random.seed(20261006)
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from app import config  # noqa: E402
-from app.llm import LLMError, chat_json  # noqa: E402
+IT, CSE = "B.Tech IT", "B.Tech CSE"
+# Course codes/names are real NSUT NEP codes (from the 2025-26 Course Coordination Committee lists).
+# Credits are NOT printed in any collected document; 4 is the full-course credit in Regulations-2019 Cl. 6.8.
+COURSES = [
+    ("ITITC302", "Database Management Systems", IT, 3, 4, "Theory"),
+    ("ITITC304", "Advance Programming", IT, 3, 4, "Theory"),
+    ("ITITC501", "Theory of Computation", IT, 5, 4, "Theory"),
+    ("ITITC503", "Artificial Intelligence", IT, 5, 4, "Theory"),
+    ("ITITC504", "Mobile Computing", IT, 5, 4, "Theory"),
+    ("COCSC302", "Database Management Systems", CSE, 3, 4, "Theory"),
+    ("COCSC303", "Design and Analysis of Algorithms", CSE, 3, 4, "Theory"),
+    ("COCSC501", "Computer Networks", CSE, 5, 4, "Theory"),
+    ("COCSC503", "Soft Computing", CSE, 5, 4, "Theory"),
+    ("COCSC504", "Information and Data Security", CSE, 5, 4, "Theory"),
+]
+SEM3 = {IT: ["ITITC302", "ITITC304"], CSE: ["COCSC302", "COCSC303"]}
+SEM5 = {IT: ["ITITC501", "ITITC503", "ITITC504"], CSE: ["COCSC501", "COCSC503", "COCSC504"]}
 
-PROMPTS = config.DATA_DIR / "prompts"
-OUT_DIR = config.DATA_DIR / "students"
-SYSTEM = "You generate realistic synthetic test data. You always reply with valid JSON only."
-TEMPERATURE = 0.7
-MAX_ATTEMPTS = 3
+FIRST = ["Aarav", "Vihaan", "Reyansh", "Ishaan", "Kabir", "Arnav", "Dhruv", "Yash", "Tanvi", "Ananya", "Diya", "Meera",
+         "Saanvi", "Kavya", "Riya", "Navya", "Harsh", "Pranav", "Lakshya", "Siddharth", "Nikhil", "Rahul", "Aditya",
+         "Mohit", "Ritika", "Shreya", "Pooja", "Neha", "Tushar", "Varun", "Jatin", "Kritika"]
+LAST = ["Sharma", "Verma", "Gupta", "Mehta", "Kapoor", "Malhotra", "Bansal", "Chauhan", "Joshi", "Nair", "Iyer", "Reddy",
+        "Das", "Bose", "Khanna", "Saxena", "Tiwari", "Yadav", "Rawat", "Bhatia", "Arora", "Sethi", "Taneja", "Grover",
+        "Dahiya", "Rana", "Tomar", "Pandey", "Mishra", "Sinha", "Ahuja", "Walia"]
+random.shuffle(FIRST)
+random.shuffle(LAST)
 
+# (student_id, programme, batch). 8 per programme-batch -> 32 students.
+ROSTER = []
+sid = 1001
+for prog, batch in [(IT, 2023), (IT, 2024), (CSE, 2023), (CSE, 2024)]:
+    for _ in range(8):
+        ROSTER.append((f"S{sid}", prog, batch))
+        sid += 1
 
-# ---------- What we expect back from the LLM (schema enforcement) ----------
-class GenCourse(BaseModel):
-    course_code: str
-    classes_held: int = Field(ge=1)
-    classes_attended: int = Field(ge=0)
-    internal_marks: int = Field(ge=0)
-    external_marks: int = Field(ge=0)
-    result: Literal["PASS", "FAIL", "ABSENT", "DETAINED"]
-
-    @model_validator(mode="after")
-    def attended_not_more_than_held(self):
-        if self.classes_attended > self.classes_held:
-            raise ValueError(f"{self.course_code}: classes_attended > classes_held")
-        return self
-
-
-class GenStudent(BaseModel):
-    student_id: str = Field(pattern=r"^S\d{4}$")
-    full_name: str = Field(min_length=3)
-    cgpa: float = Field(ge=0, le=10)
-    courses: list[GenCourse]
-
-
-class GenOutput(BaseModel):
-    students: list[GenStudent]
-
-
-def pass_mark_from_rules(max_marks: int) -> int:
-    """Pass mark comes from the rule registry seed file, not from code."""
-    with open(config.DATA_DIR / "rules_seed.csv") as f:
-        for rule in csv.DictReader(f):
-            if rule["parameter"] == "pass_marks_pct":
-                return round(float(rule["value"]) * max_marks / 100)
-    raise SystemExit("pass_marks_pct rule not found in rules_seed.csv")
-
-
-def build_prompt(template: Template, plan: dict, group: dict, pass_mark: int) -> tuple[str, list[str], list[str]]:
-    """Fill the prompt template for one group of students."""
-    ids = [f"S{group['first_id'] + i}" for i in range(group["count"])]
-    courses = [c for c in plan["courses"]
-               if c["programme"] == group["programme"] and c["semester"] == group["course_semester"]]
-    prompt = template.substitute(
-        programme=group["programme"],
-        batch_year=group["batch_year"],
-        current_semester=group["current_semester"],
-        count=group["count"],
-        id_list=", ".join(ids),
-        exam_session=plan["exam_session"],
-        course_semester=group["course_semester"],
-        course_list="\n".join(f"  - {c['course_code']} {c['course_name']}" for c in courses),
-        internal_max=plan["internal_max"],
-        external_max=plan["external_max"],
-        pass_mark=pass_mark,
-        edge_cases="\n".join(f"- {e}" for e in group["edge_cases"]),
-    )
-    return prompt, ids, [c["course_code"] for c in courses]
-
-
-def check_group(out: GenOutput, ids: list[str], course_codes: list[str], plan: dict) -> None:
-    """Extra checks Pydantic cannot do alone: right IDs, right courses, marks in range."""
-    got_ids = [s.student_id for s in out.students]
-    if got_ids != ids:
-        raise ValueError(f"expected student IDs {ids}, got {got_ids}")
-    for s in out.students:
-        if sorted(c.course_code for c in s.courses) != sorted(course_codes):
-            raise ValueError(f"{s.student_id}: expected courses {course_codes}")
-        for c in s.courses:
-            if c.internal_marks > plan["internal_max"] or c.external_marks > plan["external_max"]:
-                raise ValueError(f"{s.student_id} {c.course_code}: marks above maximum")
-
-
-def generate_group(template, plan, group, pass_mark, log) -> GenOutput:
-    """Ask the LLM for one group; retry with the error message if the output is invalid."""
-    prompt, ids, course_codes = build_prompt(template, plan, group, pass_mark)
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        data, usage = chat_json(SYSTEM, prompt, temperature=TEMPERATURE)
-        log["llm_calls"] += usage["calls"]
-        log["tokens"] += usage["tokens"]
-        try:
-            out = GenOutput.model_validate(data)
-            check_group(out, ids, course_codes, plan)
-            return out
-        except (ValidationError, ValueError) as e:
-            log["retries"].append({"group": f"{group['programme']} {group['batch_year']}",
-                                   "attempt": attempt, "error": str(e)[:300]})
-            prompt += f"\n\nYour previous answer was invalid: {str(e)[:300]}\nReturn corrected JSON only."
-    raise SystemExit(f"Group {group['programme']} {group['batch_year']} failed after {MAX_ATTEMPTS} attempts")
+# ---- Edge cases: per student, explicit overrides. -------------------------------------------------------
+# att[course] = (held, attended); res[(course, session, type)] = (internal, external) | "ABSENT" | "DETAINED"
+EDGE = {
+    "S1001": dict(cgpa=8.50, note="CGPA exactly 8.50 (B.Tech Honours cut-off, Cl. 7.9/15.4); all courses passed"),
+    "S1002": dict(cgpa=6.90, att={"ITITC501": (40, 30)},
+                  res={("ITITC501", "2025-DEC", "REGULAR"): (14, 20)},
+                  note="Fail one mark below pass (total 34 < 35); re-registered with attendance exactly 75% (30/40)"),
+    "S1003": dict(cgpa=6.40, att={"ITITC503": (40, 29)},
+                  res={("ITITC503", "2025-DEC", "REGULAR"): "ABSENT"},
+                  note="ABSENT result; re-registered with attendance one class below 75% (29/40 = 72.5%)"),
+    "S1004": dict(cgpa=5.00, att={"ITITC504": (40, 24), "ITITC503": (40, 26)}, extra_backlogs=1,
+                  res={("ITITC504", "2025-DEC", "REGULAR"): "DETAINED", ("ITITC503", "2025-DEC", "REGULAR"): (20, 12),
+                       ("ITITC501", "2025-DEC", "REGULAR"): (18, 15)},
+                  note="DETAINED + 2 fails = multiple backlogs (3 visible + 1 legacy = 4); CGPA exactly 5.00 (degree minimum); attendance exactly 60% (24/40, the Cl. 11.6 floor)"),
+    "S1005": dict(cgpa=7.50, note="CGPA exactly 7.50 (CVSPK Talent Incentive retention threshold); all passed"),
+    "S1006": dict(cgpa=7.10, res={("ITITC501", "2025-DEC", "REGULAR"): (41, 14), ("ITITC501", "2026-JUL", "SUPPLEMENTARY"): (41, 22)},
+                  note="Total 55 but ESE 14/50 = 28% < 30% -> FAIL (Cl. 12.7); later cleared in SUPPLEMENTARY session"),
+    "S1008": dict(cgpa=6.50, note="CGPA exactly 6.50 (First Division threshold, Cl. 15)"),
+    "S1009": dict(cgpa=8.00, att={"ITITC501": (40, 30)}, note="Attendance exactly 75% (30/40) in ITITC501; CGPA exactly 8.00"),
+    "S1010": dict(att={"ITITC503": (40, 29)}, note="Attendance one class below threshold (29/40 = 72.5%) in ITITC503"),
+    "S1011": dict(att={"ITITC504": (40, 24)}, note="Attendance exactly 60% (24/40): at the Cl. 11.6 floor but below 75%"),
+    "S1012": dict(att={"ITITC501": (41, 24)}, note="Attendance 58.5% (24/41): below the 60% floor even after relaxation"),
+    "S1013": dict(cgpa=7.00, res={("ITITC302", "2025-DEC", "REGULAR"): (14, 20), ("ITITC302", "2026-JUL", "SUPPLEMENTARY"): (30, 35)},
+                  note="Fail at 34, then PASS in SUPPLEMENTARY (backlog cleared)"),
+    "S1014": dict(cgpa=6.60, res={("ITITC304", "2025-DEC", "REGULAR"): "ABSENT", ("ITITC304", "2026-JUL", "SUPPLEMENTARY"): "ABSENT"},
+                  note="ABSENT in regular and again in SUPPLEMENTARY; backlog persists"),
+    "S1016": dict(cgpa=5.60, extra_backlogs=1,
+                  res={("ITITC302", "2025-DEC", "REGULAR"): (10, 10), ("ITITC304", "2025-DEC", "REGULAR"): (15, 15)},
+                  note="Both semester-3 courses failed + 1 legacy backlog = 3 active backlogs"),
+    "S1018": dict(cgpa=6.80, att={"COCSC501": (40, 30)}, res={("COCSC501", "2025-DEC", "REGULAR"): (14, 20)},
+                  note="Fail at 34; re-registered with attendance exactly 75% (30/40)"),
+    "S1019": dict(cgpa=6.20, att={"COCSC503": (40, 27)}, res={("COCSC503", "2025-DEC", "REGULAR"): "DETAINED"},
+                  note="DETAINED; re-registered with 67.5% attendance (27/40)"),
+    "S1020": dict(cgpa=8.50, note="CGPA exactly 8.50 (second student at the Honours cut-off)"),
+    "S1021": dict(cgpa=7.50, att={"COCSC504": (36, 27)}, res={("COCSC504", "2025-DEC", "REGULAR"): (20, 10)},
+                  note="CGPA 7.50; failed COCSC504 (30 total, ESE 10); re-registered at exactly 75% (27/36)"),
+    "S1022": dict(cgpa=5.00, extra_backlogs=2,
+                  res={("COCSC501", "2025-DEC", "REGULAR"): (18, 14), ("COCSC503", "2025-DEC", "REGULAR"): "ABSENT",
+                       ("COCSC504", "2025-DEC", "REGULAR"): (22, 11)},
+                  att={"COCSC501": (40, 31), "COCSC503": (40, 20), "COCSC504": (40, 33)},
+                  note="3 visible + 2 legacy = 5 active backlogs; CGPA exactly 5.00; attendance 50% in COCSC503"),
+    "S1025": dict(cgpa=8.00, att={"COCSC501": (40, 30)}, note="Attendance exactly 75%; CGPA exactly 8.00"),
+    "S1026": dict(att={"COCSC503": (40, 29)}, note="Attendance one class below threshold (72.5%)"),
+    "S1027": dict(att={"COCSC504": (40, 24)}, note="Attendance exactly 60%"),
+    "S1028": dict(cgpa=6.50, res={("COCSC302", "2025-DEC", "REGULAR"): (14, 20), ("COCSC302", "2026-JUL", "SUPPLEMENTARY"): (20, 14)},
+                  note="Fail at 34, then SUPPLEMENTARY also fails (total 34, ESE 14 < 15); CGPA exactly 6.50"),
+    "S1029": dict(cgpa=6.80, res={("COCSC303", "2025-DEC", "REGULAR"): "ABSENT", ("COCSC303", "2026-JUL", "SUPPLEMENTARY"): (25, 30)},
+                  note="ABSENT then PASS in SUPPLEMENTARY"),
+    "S1032": dict(cgpa=5.40, extra_backlogs=1,
+                  res={("COCSC302", "2025-DEC", "REGULAR"): (12, 9), ("COCSC303", "2025-DEC", "REGULAR"): (13, 11)},
+                  note="Both semester-3 courses failed + 1 legacy backlog = 3 active backlogs"),
+}
 
 
-def main() -> None:
-    plan = json.loads((PROMPTS / "generation_plan.json").read_text())
-    template = Template((PROMPTS / "students_prompt.txt").read_text())
-    pass_mark = pass_mark_from_rules(plan["max_marks"])
-    log = {"model": config.active_model_name(), "temperature": TEMPERATURE,
-           "llm_calls": 0, "tokens": 0, "retries": [], "fixes": []}
-
-    students, attendance, results = [], [], []
-    for group in plan["groups"]:
-        print(f"Generating {group['count']} students: {group['programme']} batch {group['batch_year']} ...")
-        out = generate_group(template, plan, group, pass_mark, log)
-
-        for s in out.students:
-            backlogs = 0
-            for c in s.courses:
-                attendance.append([s.student_id, c.course_code, c.classes_held, c.classes_attended])
-                # Derived field: computed by code, never trusted from the LLM
-                total = c.internal_marks + c.external_marks
-                result = c.result
-                # Fix results that contradict the marks (logged for the data card)
-                if result in ("PASS", "FAIL"):
-                    correct = "PASS" if total >= pass_mark else "FAIL"
-                    if correct != result:
-                        log["fixes"].append(f"{s.student_id} {c.course_code}: LLM said {result} for total {total}, fixed to {correct}")
-                        result = correct
-                elif c.external_marks != 0:
-                    log["fixes"].append(f"{s.student_id} {c.course_code}: {result} with external_marks {c.external_marks}, set to 0")
-                    total = c.internal_marks
-                    c.external_marks = 0
-                if result != "PASS":
-                    backlogs += 1
-                results.append([s.student_id, c.course_code, plan["exam_session"], "REGULAR",
-                                c.internal_marks, c.external_marks, total, plan["max_marks"], result])
-            # Roll number = batch year + programme code + serial (e.g. 2023UIT3015), from the plan
-            serial = plan["roll_number_first_serial"] + out.students.index(s)
-            roll = f"{group['batch_year']}{plan['roll_number_codes'][group['programme']]}{serial}"
-            students.append([s.student_id, s.full_name, group["programme"], group["batch_year"],
-                             group["current_semester"], round(s.cgpa, 2), backlogs, roll])
-
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    write_csv("students.csv", ["student_id", "full_name", "programme", "batch_year", "current_semester",
-                               "cgpa", "active_backlogs", "roll_number"], students)
-    write_csv("courses.csv", ["course_code", "course_name", "programme", "semester", "credits"],
-              [[c["course_code"], c["course_name"], c["programme"], c["semester"], c["credits"]] for c in plan["courses"]])
-    write_csv("attendance.csv", ["student_id", "course_code", "classes_held", "classes_attended"], attendance)
-    write_csv("results.csv", ["student_id", "course_code", "exam_session", "exam_type", "internal_marks",
-                              "external_marks", "total_marks", "max_marks", "result"], results)
-    (OUT_DIR / "generation_log.json").write_text(json.dumps(log, indent=2))
-    print(f"Done: {len(students)} students. LLM calls={log['llm_calls']}, fixes={len(log['fixes'])}")
-    print("Next: python scripts/validate_data.py")
+def grade(total, ext, result):
+    if result == "DETAINED":
+        return "FD"
+    if result == "ABSENT":
+        return "Ab"
+    if result == "FAIL":
+        return "F"
+    for lo, g in [(90, "O"), (81, "A+"), (72, "A"), (63, "B+"), (54, "B"), (45, "C"), (35, "D")]:
+        if total >= lo:
+            return g
+    return "F"
 
 
-def write_csv(name: str, header: list[str], rows: list[list]) -> None:
-    with open(OUT_DIR / name, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(rows)
+def make_result(code, session, etype, val):
+    if val in ("ABSENT", "DETAINED"):
+        return dict(course_code=code, exam_session=session, exam_type=etype, internal_marks=random.randint(18, 40),
+                    external_marks="", total_marks="", max_marks=100, result=val, grade="Ab" if val == "ABSENT" else "FD")
+    i, e = val
+    t = i + e
+    res = "PASS" if (t >= 35 and e >= 15) else "FAIL"
+    return dict(course_code=code, exam_session=session, exam_type=etype, internal_marks=i, external_marks=e,
+                total_marks=t, max_marks=100, result=res, grade=grade(t, e, res))
+
+
+def passing_pair():
+    while True:
+        i, e = random.randint(26, 48), random.randint(22, 48)
+        if 50 <= i + e <= 96:
+            return i, e
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    students, attendance, results, edge_rows = [], [], [], []
+    used_roll = {}
+    for n, (sid, prog, batch) in enumerate(ROSTER):
+        code = "UIT" if prog == IT else "UCS"
+        base = 3101 if prog == IT else 2101
+        k = used_roll.get((prog, batch), 0)
+        used_roll[(prog, batch)] = k + 1
+        roll = f"{batch}{code}{base + k}"
+        name = f"{FIRST[n]} {LAST[n]}"
+        e = EDGE.get(sid, {})
+        cgpa = e.get("cgpa", round(random.uniform(6.2, 9.4), 2))
+        sem = 7 if batch == 2023 else 5
+        ccodes = SEM5[prog] if batch == 2023 else SEM3[prog]
+
+        # Results: 2023 batch -> sem-5 courses (Dec 2025); 2024 batch -> sem-3 courses (Dec 2025).
+        rows = {}
+        for c in ccodes:
+            rows[(c, "2025-DEC", "REGULAR")] = passing_pair()
+        for key, val in e.get("res", {}).items():
+            rows[key] = val
+        for (c, ses, et), val in sorted(rows.items(), key=lambda kv: (kv[0][0], kv[0][1])):
+            r = make_result(c, ses, et, val)
+            r.update(student_id=sid)
+            results.append(r)
+
+        # Attendance: current-term rows. 2024 batch: all three sem-5 courses. 2023 batch: only Study-Mode re-registrations.
+        att = {}
+        if batch == 2024:
+            for c in SEM5[prog]:
+                held = random.randint(36, 44)
+                att[c] = (held, min(held, round(held * random.uniform(0.80, 0.97))))
+        for c, v in e.get("att", {}).items():
+            att[c] = v
+        for c, (h, a) in att.items():
+            attendance.append(dict(student_id=sid, course_code=c, classes_held=h, classes_attended=a))
+
+        # Backlogs = courses whose latest result is not PASS, plus legacy backlogs outside the 10 courses.
+        latest = {}
+        for r in results:
+            if r["student_id"] == sid:
+                key = r["course_code"]
+                if key not in latest or r["exam_session"] > latest[key][0]:
+                    latest[key] = (r["exam_session"], r["result"])
+        backlogs = sum(1 for _, res in latest.values() if res != "PASS") + e.get("extra_backlogs", 0)
+        students.append(dict(student_id=sid, full_name=name, programme=prog, batch_year=batch, current_semester=sem,
+                             cgpa=f"{cgpa:.2f}", active_backlogs=backlogs, roll_no=roll,
+                             email=f"{name.lower().replace(' ', '.')}.{roll.lower()}@nsut.ac.in"))
+        if e.get("note"):
+            edge_rows.append(dict(student_id=sid, roll_no=roll, edge_case=e["note"]))
+
+    def dump(name, cols, rows):
+        with (OUT / name).open("w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=cols)
+            w.writeheader()
+            w.writerows(rows)
+
+    dump("students.csv", ["student_id", "full_name", "programme", "batch_year", "current_semester", "cgpa",
+                          "active_backlogs", "roll_no", "email"], students)
+    dump("courses.csv", ["course_code", "course_name", "programme", "semester", "credits", "course_type"],
+         [dict(zip(["course_code", "course_name", "programme", "semester", "credits", "course_type"], c)) for c in COURSES])
+    dump("attendance.csv", ["student_id", "course_code", "classes_held", "classes_attended"], attendance)
+    dump("results.csv", ["student_id", "course_code", "exam_session", "exam_type", "internal_marks", "external_marks",
+                         "total_marks", "max_marks", "result", "grade"], results)
+    dump("edge_cases.csv", ["student_id", "roll_no", "edge_case"], edge_rows)
+    print(f"students={len(students)} courses={len(COURSES)} attendance={len(attendance)} results={len(results)} edge_cases={len(edge_rows)}")
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except LLMError as e:
-        raise SystemExit(f"LLM not available: {e}\nSet LLM_PROVIDER and keys in backend/.env")
+    main()

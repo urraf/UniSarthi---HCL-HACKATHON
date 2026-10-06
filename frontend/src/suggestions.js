@@ -3,15 +3,16 @@
 // {course} is replaced with one of the logged-in student's own courses.
 export const GENERAL_QUESTIONS = [
   "What is the minimum attendance required for end-semester exams?",
-  "How do I apply for the supplementary exam?",
-  "What CGPA do I need to register for placements?",
+  "Is there a supplementary exam if I fail a course?",
+  "What is the summer semester fee per paper?",
+  "What is the hostel fee deadline?",
 ];
 
 export const PERSONAL_QUESTIONS = [
   "What is my attendance in {course}?",
   "Am I eligible for the end-semester exam in {course}?",
   "Am I eligible for campus placements?",
-  "If I pass the supplementary in {course}, will I be eligible for placement?",
+  "If I clear {course}, can I register for placements?",
 ];
 
 // Fill in the student's courses (first course for the first question, and so on)

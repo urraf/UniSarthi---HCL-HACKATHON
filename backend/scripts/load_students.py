@@ -15,21 +15,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app import config, db  # noqa: E402
-from scripts.validate_data import validate  # noqa: E402
+from scripts.validate_data import load_dir, validate  # noqa: E402
 
-# table name -> columns, in the order of the Annex C schema
-TABLES = {
-    "students": ["student_id", "full_name", "programme", "batch_year", "current_semester", "cgpa", "active_backlogs"],
-    "courses": ["course_code", "course_name", "programme", "semester", "credits"],
-    "attendance": ["student_id", "course_code", "classes_held", "classes_attended"],
-    "results": ["student_id", "course_code", "exam_session", "exam_type", "internal_marks",
-                "external_marks", "total_marks", "max_marks", "result"],
-}
+TABLES = ["courses", "students", "attendance", "results"]  # parents first (foreign keys)
+ALIASES = {"roll_no": "roll_number"}                          # CSV column -> our column
 
 
-def load_folder(folder: Path, our_data: bool) -> dict:
-    """Validate and load the 4 CSV files. Returns row counts per table."""
-    errors, _ = validate(folder, our_data=our_data)
+def table_columns(conn, table: str) -> list[str]:
+    return [row[1] for row in conn.execute(f"PRAGMA table_info({table})")]
+
+
+def load_folder(folder: Path) -> dict:
+    """Validate and load the CSV files. Only columns that exist in our tables are loaded."""
+    errors, _stats = validate(load_dir(folder))
     if errors:
         print("Validation failed, nothing loaded:")
         print("\n".join(f"  - {e}" for e in errors))
@@ -38,16 +36,15 @@ def load_folder(folder: Path, our_data: bool) -> dict:
     db.init_db()
     counts = {}
     with db.connect() as conn:
-        # courses and students first, because attendance/results point to them
-        for table, cols in TABLES.items():
-            with open(folder / f"{table}.csv", newline="") as f:
+        for table in TABLES:
+            with open(folder / f"{table}.csv", newline="", encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f)
-                # Optional extra column: roll_number (our data has it, judges' Annex C files may not)
-                if table == "students" and "roll_number" in (reader.fieldnames or []):
-                    cols = cols + ["roll_number"]
-                rows = [[row[c] for c in cols] for row in reader]
-            placeholders = ", ".join("?" for _ in cols)
-            conn.executemany(f"INSERT OR REPLACE INTO {table} ({', '.join(cols)}) VALUES ({placeholders})", rows)
+                known = set(table_columns(conn, table))
+                pairs = [(c, ALIASES.get(c, c)) for c in reader.fieldnames if ALIASES.get(c, c) in known]
+                # empty cells (e.g. marks of an ABSENT result) become NULL
+                rows = [[(row[src] if row[src] != "" else None) for src, _ in pairs] for row in reader]
+            cols = [dst for _, dst in pairs]
+            conn.executemany(f"INSERT OR REPLACE INTO {table} ({', '.join(cols)}) VALUES ({', '.join('?' for _ in cols)})", rows)
             counts[table] = len(rows)
     return counts
 
@@ -56,11 +53,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dir", default=str(config.DATA_DIR / "students"))
     args = parser.parse_args()
-
-    folder = Path(args.dir)
-    our_data = folder.resolve() == (config.DATA_DIR / "students").resolve()
-    counts = load_folder(folder, our_data)
-    print(f"Loaded: {counts}")
+    print(f"Loaded: {load_folder(Path(args.dir))}")
 
 
 if __name__ == "__main__":

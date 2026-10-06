@@ -57,6 +57,14 @@ def get_rule(parameter: str, student: dict | None, as_of: str) -> dict:
     items = [{**r, "doc_id": r["source_doc_id"], "section": r["source_section"], "label": r["rule_id"]} for r in rows]
     res = resolve(items, student, as_of)
     w = res["winner"]
+    if res["status"] == "none":
+        # Say WHY there is no rule: e.g. the only policy expired before as_of_date
+        expired = sorted((i for i in items if i.get("effective_to") and i["effective_to"] < as_of),
+                         key=lambda i: i["effective_to"])
+        if expired:
+            last = expired[-1]
+            res["decision"] = (f"No rule in force on {as_of}: the latest one ({last['rule_id']}, {last['doc_id']}) "
+                               f"expired on {last['effective_to']}.")
     return {
         "parameter": parameter,
         "status": res["status"],                          # resolved | conflict | none
@@ -87,9 +95,19 @@ def _undetermined(rule: dict) -> dict:
     return {"result": "UNDETERMINED", "reason": rule["decision"], "rule": rule}
 
 
+def first_rule(parameters: list[str], student: dict | None, as_of: str) -> dict:
+    """The first of these registry parameters that has a rule (registries name things differently)."""
+    rule = None
+    for parameter in parameters:
+        rule = get_rule(parameter, student, as_of)
+        if rule["status"] != "none":
+            return rule
+    return rule
+
+
 # ---------- Eligibility checks ----------
 def check_exam_eligibility(student_id: str, course_code: str, as_of: str) -> dict:
-    """Can the student sit the end-semester exam in this course? (attendance rule)"""
+    """Can the student sit the end-semester exam in this course? (attendance rules)"""
     student = get_student_profile(student_id)
     attendance = get_attendance(student_id, course_code)
     if "error" in attendance:
@@ -97,17 +115,25 @@ def check_exam_eligibility(student_id: str, course_code: str, as_of: str) -> dic
     rule = get_rule("min_attendance_pct", student, as_of)
     if rule["status"] != "resolved":
         return _undetermined(rule)
-    eligible = compare(attendance["attendance_pct"], rule["operator"], rule["value"])
-    return {
-        "result": "ELIGIBLE" if eligible else "NOT_ELIGIBLE",
-        "attendance_pct": attendance["attendance_pct"],
-        "required": f"{rule['operator']} {rule['value']}%",
-        "rule": rule,
-    }
+    pct = attendance["attendance_pct"]
+    out = {"attendance_pct": pct, "required": f"{rule['operator']} {rule['value']}%", "rule": rule}
+    if compare(pct, rule["operator"], rule["value"]):
+        return {"result": "ELIGIBLE", **out}
+
+    # Short of attendance: is a relaxation by the Dean possible, or is the student below the hard floor?
+    floor = get_rule("attendance_floor_pct", student, as_of)
+    relax = get_rule("attendance_relaxation_pct", student, as_of)
+    rules = [rule] + [r for r in (floor, relax) if r["status"] == "resolved"]
+    if floor["status"] == "resolved" and not compare(pct, floor["operator"], floor["value"]):
+        return {"result": "NOT_ELIGIBLE", **out, "below_floor": f"below the {floor['value']}% floor: no relaxation possible",
+                "rules": rules}
+    note = (f"short of attendance; the Dean may relax it by up to {relax['value']} percentage points on documented grounds"
+            if relax["status"] == "resolved" else "short of attendance")
+    return {"result": "NOT_ELIGIBLE", **out, "note": note, "rules": rules}
 
 
 def check_supplementary_eligibility(student_id: str, course_code: str, as_of: str) -> dict:
-    """Can the student take the supplementary exam in this course? (result rule)"""
+    """Can the student take a supplementary exam in this course?"""
     student = get_student_profile(student_id)
     results = get_results(student_id, course_code)
     if not results:
@@ -115,27 +141,31 @@ def check_supplementary_eligibility(student_id: str, course_code: str, as_of: st
     latest = results[0]
     if latest["result"] == "PASS":
         return {"result": "NOT_NEEDED", "latest_result": "PASS", "course_code": course_code}
+
+    # Registry says supplementary exams do not exist at all (e.g. NSUT Regulations Cl. 12.3)
+    allowed = get_rule("supplementary_allowed", student, as_of)
+    if allowed["status"] == "resolved" and str(allowed["value"]).lower() in ("false", "no", "0"):
+        return {"result": "NOT_AVAILABLE", "course_code": course_code, "latest_result": latest["result"],
+                "reason": "there are no supplementary examinations; the course must be re-registered "
+                          "(see the backlog / make-up exam documents)", "rule": allowed}
+
+    # Registry lists which results may take the supplementary exam
     rule = get_rule("supplementary_allowed_results", student, as_of)
     if rule["status"] != "resolved":
         return _undetermined(rule)
     eligible = compare(latest["result"], rule["operator"], rule["value"])
-    return {
-        "result": "ELIGIBLE" if eligible else "NOT_ELIGIBLE",
-        "course_code": course_code,
-        "latest_result": latest["result"],
-        "allowed_results": rule["value"],
-        "rule": rule,
-    }
+    return {"result": "ELIGIBLE" if eligible else "NOT_ELIGIBLE", "course_code": course_code,
+            "latest_result": latest["result"], "allowed_results": rule["value"], "rule": rule}
 
 
 def check_placement_eligibility(student_id: str, as_of: str, assume_cleared: list[str] | None = None) -> dict:
     """
     Can the student register for placements? (CGPA rule + backlog rule)
-    assume_cleared: what-if courses the student expects to pass (e.g. after the supplementary).
+    assume_cleared: what-if courses the student expects to clear.
     """
     student = get_student_profile(student_id)
-    cgpa_rule = get_rule("placement_min_cgpa", student, as_of)
-    backlog_rule = get_rule("placement_max_backlogs", student, as_of)
+    cgpa_rule = first_rule(["placement_min_cgpa", "univ_min_cgpa_placement"], student, as_of)
+    backlog_rule = first_rule(["placement_max_backlogs", "max_dropped_backlogs"], student, as_of)
     for rule in (cgpa_rule, backlog_rule):
         if rule["status"] != "resolved":
             return _undetermined(rule)
@@ -143,23 +173,22 @@ def check_placement_eligibility(student_id: str, as_of: str, assume_cleared: lis
     backlogs = student["active_backlogs"]
     assumptions = []
     for code in assume_cleared or []:
-        # A course can only be cleared by a supplementary exam if the student is allowed to take it
-        supp = check_supplementary_eligibility(student_id, code, as_of)
-        if supp.get("result") == "ELIGIBLE":
+        latest = get_results(student_id, code)
+        if latest and latest[0]["result"] != "PASS":
             backlogs -= 1
-            assumptions.append(f"Assumes you pass {code} in the supplementary exam, reducing active backlogs by 1")
-        elif supp.get("result") == "NOT_ELIGIBLE":
-            assumptions.append(f"{code} cannot be cleared by a supplementary exam (result {supp['latest_result']} "
-                               f"is not allowed), so the backlog stays")
+            assumptions.append(f"Assumes you clear {code}, reducing active backlogs by 1")
     if assumptions:
         assumptions.append("Assumes your CGPA stays the same (the new grade is not known yet)")
 
-    cgpa_ok = compare(student["cgpa"], cgpa_rule["operator"], cgpa_rule["value"])
+    # "none" means the university sets no minimum CGPA (companies set their own)
+    no_minimum = str(cgpa_rule["value"]).lower() in ("none", "")
+    cgpa_ok = True if no_minimum else compare(student["cgpa"], cgpa_rule["operator"], cgpa_rule["value"])
     backlog_ok = compare(backlogs, backlog_rule["operator"], backlog_rule["value"])
     return {
         "result": "ELIGIBLE" if cgpa_ok and backlog_ok else "NOT_ELIGIBLE",
         "cgpa": student["cgpa"],
-        "cgpa_required": f"{cgpa_rule['operator']} {cgpa_rule['value']}",
+        "cgpa_required": "no university-wide minimum (each company sets its own)" if no_minimum
+        else f"{cgpa_rule['operator']} {cgpa_rule['value']}",
         "cgpa_ok": cgpa_ok,
         "active_backlogs_now": student["active_backlogs"],
         "active_backlogs_used": backlogs,

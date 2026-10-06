@@ -1,0 +1,26 @@
+student_id,roll_no,edge_case
+S1001,2023UIT3101,"CGPA exactly 8.50 (B.Tech Honours cut-off, Cl. 7.9/15.4); all courses passed"
+S1002,2023UIT3102,Fail one mark below pass (total 34 < 35); re-registered with attendance exactly 75% (30/40)
+S1003,2023UIT3103,ABSENT result; re-registered with attendance one class below 75% (29/40 = 72.5%)
+S1004,2023UIT3104,"DETAINED + 2 fails = multiple backlogs (3 visible + 1 legacy = 4); CGPA exactly 5.00 (degree minimum); attendance exactly 60% (24/40, the Cl. 11.6 floor)"
+S1005,2023UIT3105,CGPA exactly 7.50 (CVSPK Talent Incentive retention threshold); all passed
+S1006,2023UIT3106,Total 55 but ESE 14/50 = 28% < 30% -> FAIL (Cl. 12.7); later cleared in SUPPLEMENTARY session
+S1008,2023UIT3108,"CGPA exactly 6.50 (First Division threshold, Cl. 15)"
+S1009,2024UIT3101,Attendance exactly 75% (30/40) in ITITC501; CGPA exactly 8.00
+S1010,2024UIT3102,Attendance one class below threshold (29/40 = 72.5%) in ITITC503
+S1011,2024UIT3103,Attendance exactly 60% (24/40): at the Cl. 11.6 floor but below 75%
+S1012,2024UIT3104,Attendance 58.5% (24/41): below the 60% floor even after relaxation
+S1013,2024UIT3105,"Fail at 34, then PASS in SUPPLEMENTARY (backlog cleared)"
+S1014,2024UIT3106,ABSENT in regular and again in SUPPLEMENTARY; backlog persists
+S1016,2024UIT3108,Both semester-3 courses failed + 1 legacy backlog = 3 active backlogs
+S1018,2023UCS2102,Fail at 34; re-registered with attendance exactly 75% (30/40)
+S1019,2023UCS2103,DETAINED; re-registered with 67.5% attendance (27/40)
+S1020,2023UCS2104,CGPA exactly 8.50 (second student at the Honours cut-off)
+S1021,2023UCS2105,"CGPA 7.50; failed COCSC504 (30 total, ESE 10); re-registered at exactly 75% (27/36)"
+S1022,2023UCS2106,3 visible + 2 legacy = 5 active backlogs; CGPA exactly 5.00; attendance 50% in COCSC503
+S1025,2024UCS2101,Attendance exactly 75%; CGPA exactly 8.00
+S1026,2024UCS2102,Attendance one class below threshold (72.5%)
+S1027,2024UCS2103,Attendance exactly 60%
+S1028,2024UCS2104,"Fail at 34, then SUPPLEMENTARY also fails (total 34, ESE 14 < 15); CGPA exactly 6.50"
+S1029,2024UCS2105,ABSENT then PASS in SUPPLEMENTARY
+S1032,2024UCS2108,Both semester-3 courses failed + 1 legacy backlog = 3 active backlogs
