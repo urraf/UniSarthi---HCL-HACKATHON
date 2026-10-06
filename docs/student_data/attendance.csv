@@ -1,0 +1,129 @@
+student_id,roll_number,full_name,course_code,course_name,classes_attended,classes_held,attendance_pct
+S1001,2023UIT3101,"Jatin Reddy",ITITC503,"Artificial Intelligence",39,42,92.86
+S1001,2023UIT3101,"Jatin Reddy",ITITC504,"Mobile Computing",37,41,90.24
+S1001,2023UIT3101,"Jatin Reddy",ITITC501,"Theory of Computation",35,45,77.78
+S1002,2023UIT3102,"Saanvi Mishra",ITITC503,"Artificial Intelligence",35,41,85.37
+S1002,2023UIT3102,"Saanvi Mishra",ITITC504,"Mobile Computing",30,38,78.95
+S1002,2023UIT3102,"Saanvi Mishra",ITITC501,"Theory of Computation",30,40,75.0
+S1003,2023UIT3103,"Siddharth Nair",ITITC503,"Artificial Intelligence",29,40,72.5
+S1003,2023UIT3103,"Siddharth Nair",ITITC504,"Mobile Computing",36,42,85.71
+S1003,2023UIT3103,"Siddharth Nair",ITITC501,"Theory of Computation",32,41,78.05
+S1004,2023UIT3104,"Tanvi Ahuja",ITITC503,"Artificial Intelligence",26,40,65.0
+S1004,2023UIT3104,"Tanvi Ahuja",ITITC504,"Mobile Computing",24,40,60.0
+S1004,2023UIT3104,"Tanvi Ahuja",ITITC501,"Theory of Computation",37,44,84.09
+S1005,2023UIT3105,"Diya Rana",ITITC503,"Artificial Intelligence",34,40,85.0
+S1005,2023UIT3105,"Diya Rana",ITITC504,"Mobile Computing",32,41,78.05
+S1005,2023UIT3105,"Diya Rana",ITITC501,"Theory of Computation",32,41,78.05
+S1006,2023UIT3106,"Varun Bansal",ITITC503,"Artificial Intelligence",35,39,89.74
+S1006,2023UIT3106,"Varun Bansal",ITITC504,"Mobile Computing",31,39,79.49
+S1006,2023UIT3106,"Varun Bansal",ITITC501,"Theory of Computation",35,45,77.78
+S1007,2023UIT3107,"Kavya Tiwari",ITITC503,"Artificial Intelligence",36,45,80.0
+S1007,2023UIT3107,"Kavya Tiwari",ITITC504,"Mobile Computing",35,43,81.4
+S1007,2023UIT3107,"Kavya Tiwari",ITITC501,"Theory of Computation",33,42,78.57
+S1008,2023UIT3108,"Arnav Iyer",ITITC503,"Artificial Intelligence",36,41,87.8
+S1008,2023UIT3108,"Arnav Iyer",ITITC504,"Mobile Computing",31,39,79.49
+S1008,2023UIT3108,"Arnav Iyer",ITITC501,"Theory of Computation",35,45,77.78
+S1009,2024UIT3101,"Shreya Chauhan",ITITC304,"Advance Programming",41,45,91.11
+S1009,2024UIT3101,"Shreya Chauhan",ITITC503,"Artificial Intelligence",35,37,94.59
+S1009,2024UIT3101,"Shreya Chauhan",ITITC302,"Database Management Systems",36,38,94.74
+S1009,2024UIT3101,"Shreya Chauhan",ITITC504,"Mobile Computing",35,42,83.33
+S1009,2024UIT3101,"Shreya Chauhan",ITITC501,"Theory of Computation",30,40,75.0
+S1010,2024UIT3102,"Neha Rawat",ITITC304,"Advance Programming",38,43,88.37
+S1010,2024UIT3102,"Neha Rawat",ITITC503,"Artificial Intelligence",29,40,72.5
+S1010,2024UIT3102,"Neha Rawat",ITITC302,"Database Management Systems",31,40,77.5
+S1010,2024UIT3102,"Neha Rawat",ITITC504,"Mobile Computing",33,41,80.49
+S1010,2024UIT3102,"Neha Rawat",ITITC501,"Theory of Computation",39,43,90.7
+S1011,2024UIT3103,"Navya Dahiya",ITITC304,"Advance Programming",34,42,80.95
+S1011,2024UIT3103,"Navya Dahiya",ITITC503,"Artificial Intelligence",41,44,93.18
+S1011,2024UIT3103,"Navya Dahiya",ITITC302,"Database Management Systems",38,43,88.37
+S1011,2024UIT3103,"Navya Dahiya",ITITC504,"Mobile Computing",24,40,60.0
+S1011,2024UIT3103,"Navya Dahiya",ITITC501,"Theory of Computation",33,37,89.19
+S1012,2024UIT3104,"Kabir Tomar",ITITC304,"Advance Programming",35,40,87.5
+S1012,2024UIT3104,"Kabir Tomar",ITITC503,"Artificial Intelligence",34,38,89.47
+S1012,2024UIT3104,"Kabir Tomar",ITITC302,"Database Management Systems",35,40,87.5
+S1012,2024UIT3104,"Kabir Tomar",ITITC504,"Mobile Computing",34,43,79.07
+S1012,2024UIT3104,"Kabir Tomar",ITITC501,"Theory of Computation",24,41,58.54
+S1013,2024UIT3105,"Meera Bhatia",ITITC304,"Advance Programming",33,39,84.62
+S1013,2024UIT3105,"Meera Bhatia",ITITC503,"Artificial Intelligence",32,38,84.21
+S1013,2024UIT3105,"Meera Bhatia",ITITC302,"Database Management Systems",30,38,78.95
+S1013,2024UIT3105,"Meera Bhatia",ITITC504,"Mobile Computing",40,42,95.24
+S1013,2024UIT3105,"Meera Bhatia",ITITC501,"Theory of Computation",34,37,91.89
+S1014,2024UIT3106,"Riya Pandey",ITITC304,"Advance Programming",35,41,85.37
+S1014,2024UIT3106,"Riya Pandey",ITITC503,"Artificial Intelligence",33,37,89.19
+S1014,2024UIT3106,"Riya Pandey",ITITC302,"Database Management Systems",33,39,84.62
+S1014,2024UIT3106,"Riya Pandey",ITITC504,"Mobile Computing",33,38,86.84
+S1014,2024UIT3106,"Riya Pandey",ITITC501,"Theory of Computation",39,44,88.64
+S1015,2024UIT3107,"Lakshya Yadav",ITITC304,"Advance Programming",30,39,76.92
+S1015,2024UIT3107,"Lakshya Yadav",ITITC503,"Artificial Intelligence",36,43,83.72
+S1015,2024UIT3107,"Lakshya Yadav",ITITC302,"Database Management Systems",37,40,92.5
+S1015,2024UIT3107,"Lakshya Yadav",ITITC504,"Mobile Computing",33,37,89.19
+S1015,2024UIT3107,"Lakshya Yadav",ITITC501,"Theory of Computation",32,36,88.89
+S1016,2024UIT3108,"Mohit Saxena",ITITC304,"Advance Programming",33,39,84.62
+S1016,2024UIT3108,"Mohit Saxena",ITITC503,"Artificial Intelligence",41,43,95.35
+S1016,2024UIT3108,"Mohit Saxena",ITITC302,"Database Management Systems",35,39,89.74
+S1016,2024UIT3108,"Mohit Saxena",ITITC504,"Mobile Computing",33,39,84.62
+S1016,2024UIT3108,"Mohit Saxena",ITITC501,"Theory of Computation",38,44,86.36
+S1017,2023UCS2101,"Aarav Das",COCSC501,"Computer Networks",36,41,87.8
+S1017,2023UCS2101,"Aarav Das",COCSC504,"Information and Data Security",33,39,84.62
+S1017,2023UCS2101,"Aarav Das",COCSC503,"Soft Computing",34,39,87.18
+S1018,2023UCS2102,"Ishaan Taneja",COCSC501,"Computer Networks",30,40,75.0
+S1018,2023UCS2102,"Ishaan Taneja",COCSC504,"Information and Data Security",34,44,77.27
+S1018,2023UCS2102,"Ishaan Taneja",COCSC503,"Soft Computing",31,40,77.5
+S1019,2023UCS2103,"Vihaan Joshi",COCSC501,"Computer Networks",33,39,84.62
+S1019,2023UCS2103,"Vihaan Joshi",COCSC504,"Information and Data Security",40,45,88.89
+S1019,2023UCS2103,"Vihaan Joshi",COCSC503,"Soft Computing",27,40,67.5
+S1020,2023UCS2104,"Ritika Sinha",COCSC501,"Computer Networks",35,44,79.55
+S1020,2023UCS2104,"Ritika Sinha",COCSC504,"Information and Data Security",33,39,84.62
+S1020,2023UCS2104,"Ritika Sinha",COCSC503,"Soft Computing",36,45,80.0
+S1021,2023UCS2105,"Aditya Gupta",COCSC501,"Computer Networks",40,45,88.89
+S1021,2023UCS2105,"Aditya Gupta",COCSC504,"Information and Data Security",27,36,75.0
+S1021,2023UCS2105,"Aditya Gupta",COCSC503,"Soft Computing",33,43,76.74
+S1022,2023UCS2106,"Nikhil Walia",COCSC501,"Computer Networks",31,40,77.5
+S1022,2023UCS2106,"Nikhil Walia",COCSC504,"Information and Data Security",33,40,82.5
+S1022,2023UCS2106,"Nikhil Walia",COCSC503,"Soft Computing",20,40,50.0
+S1023,2023UCS2107,"Pooja Mehta",COCSC501,"Computer Networks",38,42,90.48
+S1023,2023UCS2107,"Pooja Mehta",COCSC504,"Information and Data Security",34,39,87.18
+S1023,2023UCS2107,"Pooja Mehta",COCSC503,"Soft Computing",31,39,79.49
+S1024,2023UCS2108,"Yash Sethi",COCSC501,"Computer Networks",36,39,92.31
+S1024,2023UCS2108,"Yash Sethi",COCSC504,"Information and Data Security",37,42,88.1
+S1024,2023UCS2108,"Yash Sethi",COCSC503,"Soft Computing",40,44,90.91
+S1025,2024UCS2101,"Pranav Sharma",COCSC501,"Computer Networks",30,40,75.0
+S1025,2024UCS2101,"Pranav Sharma",COCSC302,"Database Management Systems",38,45,84.44
+S1025,2024UCS2101,"Pranav Sharma",COCSC303,"Design and Analysis of Algorithms",43,45,95.56
+S1025,2024UCS2101,"Pranav Sharma",COCSC504,"Information and Data Security",40,44,90.91
+S1025,2024UCS2101,"Pranav Sharma",COCSC503,"Soft Computing",35,43,81.4
+S1026,2024UCS2102,"Dhruv Verma",COCSC501,"Computer Networks",40,42,95.24
+S1026,2024UCS2102,"Dhruv Verma",COCSC302,"Database Management Systems",35,45,77.78
+S1026,2024UCS2102,"Dhruv Verma",COCSC303,"Design and Analysis of Algorithms",35,45,77.78
+S1026,2024UCS2102,"Dhruv Verma",COCSC504,"Information and Data Security",37,39,94.87
+S1026,2024UCS2102,"Dhruv Verma",COCSC503,"Soft Computing",29,40,72.5
+S1027,2024UCS2103,"Harsh Khanna",COCSC501,"Computer Networks",37,44,84.09
+S1027,2024UCS2103,"Harsh Khanna",COCSC302,"Database Management Systems",35,40,87.5
+S1027,2024UCS2103,"Harsh Khanna",COCSC303,"Design and Analysis of Algorithms",37,44,84.09
+S1027,2024UCS2103,"Harsh Khanna",COCSC504,"Information and Data Security",24,40,60.0
+S1027,2024UCS2103,"Harsh Khanna",COCSC503,"Soft Computing",35,39,89.74
+S1028,2024UCS2104,"Tushar Arora",COCSC501,"Computer Networks",36,39,92.31
+S1028,2024UCS2104,"Tushar Arora",COCSC302,"Database Management Systems",35,39,89.74
+S1028,2024UCS2104,"Tushar Arora",COCSC303,"Design and Analysis of Algorithms",33,40,82.5
+S1028,2024UCS2104,"Tushar Arora",COCSC504,"Information and Data Security",36,38,94.74
+S1028,2024UCS2104,"Tushar Arora",COCSC503,"Soft Computing",30,37,81.08
+S1029,2024UCS2105,"Ananya Grover",COCSC501,"Computer Networks",35,43,81.4
+S1029,2024UCS2105,"Ananya Grover",COCSC302,"Database Management Systems",41,44,93.18
+S1029,2024UCS2105,"Ananya Grover",COCSC303,"Design and Analysis of Algorithms",34,44,77.27
+S1029,2024UCS2105,"Ananya Grover",COCSC504,"Information and Data Security",35,37,94.59
+S1029,2024UCS2105,"Ananya Grover",COCSC503,"Soft Computing",40,43,93.02
+S1030,2024UCS2106,"Rahul Malhotra",COCSC501,"Computer Networks",34,37,91.89
+S1030,2024UCS2106,"Rahul Malhotra",COCSC302,"Database Management Systems",36,42,85.71
+S1030,2024UCS2106,"Rahul Malhotra",COCSC303,"Design and Analysis of Algorithms",39,45,86.67
+S1030,2024UCS2106,"Rahul Malhotra",COCSC504,"Information and Data Security",41,43,95.35
+S1030,2024UCS2106,"Rahul Malhotra",COCSC503,"Soft Computing",30,37,81.08
+S1031,2024UCS2107,"Reyansh Kapoor",COCSC501,"Computer Networks",36,40,90.0
+S1031,2024UCS2107,"Reyansh Kapoor",COCSC302,"Database Management Systems",36,41,87.8
+S1031,2024UCS2107,"Reyansh Kapoor",COCSC303,"Design and Analysis of Algorithms",34,39,87.18
+S1031,2024UCS2107,"Reyansh Kapoor",COCSC504,"Information and Data Security",35,37,94.59
+S1031,2024UCS2107,"Reyansh Kapoor",COCSC503,"Soft Computing",36,44,81.82
+S1032,2024UCS2108,"Kritika Bose",COCSC501,"Computer Networks",32,37,86.49
+S1032,2024UCS2108,"Kritika Bose",COCSC302,"Database Management Systems",34,40,85.0
+S1032,2024UCS2108,"Kritika Bose",COCSC303,"Design and Analysis of Algorithms",36,39,92.31
+S1032,2024UCS2108,"Kritika Bose",COCSC504,"Information and Data Security",34,38,89.47
+S1032,2024UCS2108,"Kritika Bose",COCSC503,"Soft Computing",40,44,90.91
