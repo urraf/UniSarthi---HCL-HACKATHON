@@ -1,4 +1,4 @@
-# Render free tier (512 MB RAM): same as requirements.txt but WITHOUT sentence-transformers/PyTorch.
+# Render free tier (512 MB RAM): same requirements.txt but WITHOUT sentence-transformers/PyTorch.
 # Embeddings use ChromaDB's ONNX copy of all-MiniLM-L6-v2 instead (EMBED_BACKEND=onnx), identical vectors.
 fastapi==0.115.6
 uvicorn==0.34.0
