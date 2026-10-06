@@ -1,11 +1,11 @@
-// Main screen: login first, then three tabs (Ask, Upload document, Sources).
+// Main screen: login first, then three tabs (Chat, Upload document, Sources).
 import { useState } from "react";
 import Login from "./components/Login.jsx";
-import AskPanel from "./components/AskPanel.jsx";
+import ChatPanel from "./components/ChatPanel.jsx";
 import IngestPanel from "./components/IngestPanel.jsx";
 import SourcesPanel from "./components/SourcesPanel.jsx";
 
-const TABS = ["Ask", "Upload document", "Sources"];
+const TABS = ["Chat", "Upload document", "Sources"];
 
 export default function App() {
   // session = { token, student_id, full_name, programme, batch_year } after login
@@ -36,7 +36,7 @@ export default function App() {
         ))}
       </nav>
 
-      {tab === "Ask" && <AskPanel session={session} />}
+      {tab === "Chat" && <ChatPanel session={session} />}
       {tab === "Upload document" && <IngestPanel />}
       {tab === "Sources" && <SourcesPanel />}
     </div>

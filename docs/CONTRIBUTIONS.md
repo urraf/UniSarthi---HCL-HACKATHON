@@ -6,7 +6,7 @@ Every member owns the files below, pushes them from their own GitHub account, an
 
 | Files | What it is |
 |---|---|
-| `frontend/` (all) | React app: login, ask, answer card, upload document, sources |
+| `frontend/` (all) | React chat app: login, chat with typing indicator and follow-up questions, upload document, sources |
 | `backend/app/main.py` | FastAPI endpoints `/ask /ingest /health /audit /sources /login /me` |
 | `backend/app/schemas.py` | Pydantic request/response models (the API contract) |
 | `backend/app/auth.py`, `backend/scripts/create_logins.py` | Login: salted password hashes, signed tokens |

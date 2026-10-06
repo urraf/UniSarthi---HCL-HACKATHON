@@ -1,5 +1,5 @@
-// Shows one answer: type badge, answer, explanation, citations, tools, rules, conflicts, audit.
-import { useState } from "react";
+// One chat bubble. Assistant answers also show their type, sources, tools, rules and audit.
+import { useEffect, useState } from "react";
 import { getAudit } from "../api.js";
 
 // Friendly labels for the 6 answer types of the guide
@@ -7,12 +7,44 @@ const TYPE_LABELS = {
   retrieved_fact: "From documents",
   calculated: "Calculated from your records",
   not_found: "Not found",
-  clarification_needed: "Needs clarification",
+  clarification_needed: "Question for you",
   refused: "Refused",
   conflict_flagged: "Sources conflict",
 };
 
-export default function AnswerCard({ question, response }) {
+// Reveal the text a few characters at a time, like the assistant is typing
+function useTypewriter(text, animate) {
+  const [shown, setShown] = useState(animate ? "" : text);
+  useEffect(() => {
+    if (!animate) return;
+    let i = 0;
+    const timer = setInterval(() => {
+      i += 3;
+      setShown(text.slice(0, i));
+      if (i >= text.length) clearInterval(timer);
+    }, 15);
+    return () => clearInterval(timer);
+  }, [text, animate]);
+  return shown;
+}
+
+export default function Message({ message }) {
+  const { role, text, response, animate, error } = message;
+  const shown = useTypewriter(text, animate);
+  const done = shown.length >= text.length;
+
+  return (
+    <div className={`bubble-row ${role}`}>
+      <div className={`bubble ${role}${error ? " error-bubble" : ""}`}>
+        {response && <span className={`badge ${response.answer_type}`}>{TYPE_LABELS[response.answer_type]}</span>}
+        <p className="bubble-text">{shown}</p>
+        {response && done && <Details response={response} />}
+      </div>
+    </div>
+  );
+}
+
+function Details({ response }) {
   const [audit, setAudit] = useState(null);
 
   async function toggleAudit() {
@@ -20,20 +52,17 @@ export default function AnswerCard({ question, response }) {
   }
 
   return (
-    <article className="card answer">
-      <p className="question">{question}</p>
-      <span className={`badge ${response.answer_type}`}>{TYPE_LABELS[response.answer_type]}</span>
-      <p className="answer-text">{response.answer}</p>
+    <div className="details">
       {response.explanation && <p className="muted">{response.explanation}</p>}
 
       {response.citations.length > 0 && (
-        <details open>
+        <details>
           <summary>Sources ({response.citations.length})</summary>
           <ul>
             {response.citations.map((c) => (
               <li key={`${c.doc_id}-${c.section}`}>
                 <strong>{c.title}</strong> ({c.doc_id}) · section {c.section}
-                {c.page ? ` · page ${c.page}` : ""} · version {c.version} · effective {c.effective_from}
+                {c.page ? ` · page ${c.page}` : ""} · v{c.version} · effective {c.effective_from}
               </li>
             ))}
           </ul>
@@ -66,19 +95,21 @@ export default function AnswerCard({ question, response }) {
           <ul>
             {response.conflicts_detected.map((c, i) => (
               <li key={i}>
-                {c.unresolved ? `Unresolved: ${[].concat(c.unresolved).join(" vs ")}` : `${c.winner} applies over ${[].concat(c.overridden).join(", ")}`}
-                {" "}<span className="muted">({c.reason})</span>
+                {c.unresolved
+                  ? `Unresolved: ${[].concat(c.unresolved).join(" vs ")}`
+                  : `${c.winner} applies over ${[].concat(c.overridden).join(", ")}`}{" "}
+                <span className="muted">({c.reason})</span>
               </li>
             ))}
           </ul>
         </details>
       )}
 
-      <footer className="meta">
+      <div className="meta">
         trace {response.trace_id} · as of {response.as_of_date}
         <button className="link" onClick={toggleAudit}>{audit ? "Hide audit" : "Show audit"}</button>
-      </footer>
+      </div>
       {audit && <pre>{JSON.stringify(audit, null, 2)}</pre>}
-    </article>
+    </div>
   );
 }
