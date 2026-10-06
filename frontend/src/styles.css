@@ -72,7 +72,14 @@ button { font: inherit; cursor: pointer; }
 @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .typing span { animation: none; } }
 
-.composer { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--line); background: var(--card); }
+/* suggested questions: one scrollable row of chips above the message box */
+.suggestions { display: flex; gap: 8px; padding: 8px 10px 0; overflow-x: auto; border-top: 1px solid var(--line); }
+.chip { flex: none; background: var(--card); color: var(--accent); border: 1px solid var(--accent); border-radius: 99px;
+        padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+.chip:hover:not(:disabled) { background: var(--accent); color: white; }
+.chip:disabled { opacity: 0.5; cursor: default; }
+
+.composer { display: flex; gap: 8px; padding: 10px; background: var(--card); }
 .composer textarea { flex: 1; resize: none; max-height: 140px; border-radius: 20px; padding: 10px 14px; }
 .composer .primary { border-radius: 20px; }
 

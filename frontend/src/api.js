@@ -40,6 +40,9 @@ export function ingest(file, metadata) {
   return fetch(`${API_URL}/ingest`, { method: "POST", body: form }).then(handle);
 }
 
+export const getMe = (session) =>
+  fetch(`${API_URL}/me`, { headers: authHeaders(session) }).then(handle);
+
 export const getSources = () => fetch(`${API_URL}/sources`).then(handle);
 export const getAudit = (traceId) => fetch(`${API_URL}/audit/${traceId}`).then(handle);
 export const getHealth = () => fetch(`${API_URL}/health`).then(handle);

@@ -2,7 +2,8 @@
 // If the assistant asks a follow-up (clarification_needed), the student's short reply
 // is joined to the original question, so "Data Structures" answers "Which course?".
 import { useEffect, useRef, useState } from "react";
-import { ask } from "../api.js";
+import { ask, getMe } from "../api.js";
+import { buildSuggestions } from "../suggestions.js";
 import Message from "./Message.jsx";
 
 export default function ChatPanel({ session }) {
@@ -17,25 +18,38 @@ export default function ChatPanel({ session }) {
   const [asOfDate, setAsOfDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState(null); // question waiting for a clarification
+  const [suggestions, setSuggestions] = useState([]);
   const bottomRef = useRef(null);
+
+  // Suggested questions use the student's own courses (from GET /me)
+  useEffect(() => {
+    getMe(session)
+      .then((me) => setSuggestions(buildSuggestions(me.courses)))
+      .catch(() => setSuggestions(buildSuggestions([])));
+  }, [session]);
 
   // Keep the newest message in view
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  async function send() {
-    const text = input.trim();
+  // Send the typed message, or a suggested question when a chip is clicked
+  async function send(chipText) {
+    const text = (chipText ?? input).trim();
     if (!text || loading) return;
-    setInput("");
+    if (!chipText) setInput("");
     setMessages((m) => [...m, { role: "user", text }]);
     setLoading(true);
 
-    // Answering a follow-up question? Combine it with the original question.
-    const question = pendingQuestion ? `${pendingQuestion} (${text})` : text;
+    // A short reply to the assistant's follow-up question ("Which course?") is combined with
+    // the original question. A full new question is sent on its own.
+    const isShortReply = text.split(/\s+/).length <= 6;
+    const question = pendingQuestion && !chipText && isShortReply ? `${pendingQuestion} (${text})` : text;
     try {
       const response = await ask(session, question, asOfDate);
-      setPendingQuestion(response.answer_type === "clarification_needed" ? question : null);
+      // Remember the question only if the assistant asked a real follow-up (not a small-talk reply)
+      const askedFollowUp = response.answer_type === "clarification_needed" && !response.explanation.startsWith("Small talk");
+      setPendingQuestion(askedFollowUp ? question : null);
       setMessages((m) => [...m, { role: "assistant", text: response.answer, response, animate: true }]);
     } catch (err) {
       setPendingQuestion(null);
@@ -75,6 +89,14 @@ export default function ChatPanel({ session }) {
         <div ref={bottomRef} />
       </div>
 
+      {suggestions.length > 0 && (
+        <div className="suggestions" aria-label="Suggested questions">
+          {suggestions.map((q) => (
+            <button key={q} className="chip" onClick={() => send(q)} disabled={loading}>{q}</button>
+          ))}
+        </div>
+      )}
+
       <div className="composer">
         <textarea
           rows={1}
@@ -84,7 +106,7 @@ export default function ChatPanel({ session }) {
           onKeyDown={onKeyDown}
           aria-label="Message"
         />
-        <button className="primary" onClick={send} disabled={loading || !input.trim()}>Send</button>
+        <button className="primary" onClick={() => send()} disabled={loading || !input.trim()}>Send</button>
       </div>
     </section>
   );

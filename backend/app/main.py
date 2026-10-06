@@ -7,7 +7,7 @@ FastAPI app: the endpoints from section 6 of the guide, plus login.
   GET  /audit/{trace_id}  audit record of one answer
   GET  /sources           Source Register: all ingested documents
   POST /login             student ID + password -> token (used by the React app)
-  GET  /me                the logged-in student's profile
+  GET  /me                the logged-in student's profile and courses
 
 Run:  uvicorn app.main:app --reload --port 8000     (from the backend/ folder)
 Docs: http://localhost:8000/docs
@@ -22,6 +22,7 @@ from app import auth, config, db, vectors
 from app.ingest import DocumentMeta, ingest_document
 from app.llm import LLMError, chat_json
 from app.pipeline.graph import run
+from app.pipeline.understand import student_courses
 from app.schemas import AskRequest, AskResponse, IngestResponse, LoginRequest, LoginResponse
 
 app = FastAPI(title="UniSarthi - Student Services Assistant", version="1.0")
@@ -119,5 +120,8 @@ def me(authorization: str | None = Header(default=None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Please log in")
     student_id = identify(None, authorization)
-    return db.query_one("SELECT student_id, full_name, programme, batch_year, current_semester FROM students "
-                        "WHERE student_id = ?", (student_id,))
+    profile = db.query_one("SELECT student_id, full_name, programme, batch_year, current_semester FROM students "
+                           "WHERE student_id = ?", (student_id,))
+    # The student's courses (used by the app to suggest personal questions)
+    profile["courses"] = student_courses(student_id)
+    return profile
