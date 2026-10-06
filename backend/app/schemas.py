@@ -1,6 +1,6 @@
 """
 Request and response formats (Pydantic v2). These ARE the API contract of section 6 of the guide.
-FastAPI checks every request against them and shows them in the docs at /docs.
+FastAPI validates every request against them and shows them in the/docs.
 """
 from typing import Literal
 
