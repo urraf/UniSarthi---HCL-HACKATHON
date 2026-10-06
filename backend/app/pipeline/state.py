@@ -10,8 +10,8 @@ from typing import TypedDict
 # Rule of thumb: "what IS the rule?" -> policy;  "what is MY situation?" -> a personal intent.
 INTENTS = {
     "policy": "general question about university rules, procedures (e.g. how to apply), fees or documents; not about the student's own records",
-    "my_courses": "which courses / subjects the student is registered in or has records for",
-    "my_attendance": "the student's own attendance in a course",
+    "my_courses": "the student's own subjects / courses: their names, how many, which ones",
+    "my_attendance": "the student's own attendance (in one course, or in all courses if none is named)",
     "my_results": "the student's own marks or results",
     "exam_eligibility": "can the student appear in the end-semester exam of a course",
     "supplementary_eligibility": "can the student take the supplementary exam in a course",
@@ -40,6 +40,7 @@ class State(TypedDict, total=False):
     intent: str
     course_code: str | None
     search_query: str           # the question rewritten for document search (better recall)
+    overview: bool              # broad question ("university rules"): answer with an overview of the key rules
     rule_parameters: list[str]  # rule registry parameters the question is about
 
     # ---- step 3: find ----

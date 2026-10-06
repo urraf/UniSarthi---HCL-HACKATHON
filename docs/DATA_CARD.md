@@ -2,6 +2,8 @@
 
 Built in the team data repo [anish295/HCL-Database](https://github.com/anish295/HCL-Database) and copied here: CSVs in `backend/data/students/`, prompts in `backend/data/prompts/generation_prompts.md`, generator `backend/scripts/generate_students.py`, validator `backend/scripts/validate_data.py`, schema `backend/data/team_schema.sql`.
 
+**Added in this repo:** `scripts/fill_attendance.py` (seeded) gives every student an attendance row in each course they have a result for (70 rows, 128 in total), so every student can ask about attendance. DETAINED results get attendance below the 60% floor, all others 78-96%; the hand-placed edge-case rows are kept unchanged. Validator: PASSED, 0 violations.
+
 | Field | Content |
 |---|---|
 | **Purpose** | Exercise every question type in the guide (policy fact, procedure, personal data, personal eligibility, multi-step/what-if, refusal) against NSUT's real rules, including threshold edge cases. All persons are fictitious. |

@@ -45,7 +45,8 @@ def understand(state: State) -> dict:
 
     intent = label.get("intent") if label.get("intent") in INTENTS else "policy"
     # A question without "I / my / me" cannot be about the asker's own records
-    if intent in PERSONAL_INTENTS and not FIRST_PERSON.search(state["question"]):
+    # ("what is the name of the subject?" from a logged-in student is still about their own subjects)
+    if intent in PERSONAL_INTENTS and intent != "my_courses" and not FIRST_PERSON.search(state["question"]):
         intent = "policy"
     rule_parameters = [p for p in label.get("rule_parameters") or [] if p in parameters]
     course_code = match_course(label.get("course_code"), state["question"], courses)
@@ -61,18 +62,18 @@ def understand(state: State) -> dict:
                 "explanation": "Small talk: no university question was asked yet."}
 
     if intent == "policy" and label.get("too_broad"):
-        # "What is the university policy?" names no topic: ask which one, listing the documents we really have
-        titles = [d["title"] for d in db.query("SELECT title FROM documents WHERE authority_level <= 4 ORDER BY authority_level")]
-        reply = (str(label.get("clarify_reply") or "").strip()
-                 or "Could you tell me which topic you mean? I can answer from: " + "; ".join(titles) + ".")
-        return {**out, "stop": True, "answer_type": "clarification_needed", "answer": reply,
-                "explanation": "The question is too broad: no specific topic was named."}
+        # "Tell me the university rules": give an overview of the key rules in force, from the rule registry
+        out.update({"overview": True, "rule_parameters": parameters,
+                    "search_query": "academic regulations attendance examination passing grading degree fees"})
 
     if label.get("asks_about_other_student"):
         return {**out, **refuse("I can only share your own records. Requests for another student's data are not allowed.")}
 
     if intent in PERSONAL_INTENTS and not student:
         return {**out, **refuse("This is a personal question. Please log in (X-Student-Id) to see your own records.")}
+
+    if intent == "my_attendance" and not course_code:
+        return out  # no course named: step 4 shows the attendance in all the student's courses
 
     if intent in COURSE_INTENTS and not course_code:
         with_record = student_courses(student["student_id"], RECORD_TABLE.get(intent))
@@ -107,8 +108,8 @@ def build_prompt(question: str, courses: list[dict], parameters: list[str], name
         '"search_query": "<the question rewritten as a short search query with specific terms the university '
         'documents would use, e.g. \'exam policy\' -> \'end-semester examination eligibility attendance pass marks '
         'supplementary examination\'>", '
-        '"too_broad": <true only if the question names no topic at all, e.g. \'what is the university policy?\'>, '
-        '"clarify_reply": "<only if too_broad: one friendly question asking which topic, mentioning the available documents>", '
+        '"too_broad": <true only for a general university-policy question with no topic, e.g. \'tell me the university rules\'. '
+        'Never for questions about the student\'s own subjects, attendance or results>, '
         '"small_talk_reply": "<only for small_talk: 1-2 friendly sentences that greet the student by first name '
         'if known, say you help with university rules, attendance, results, exams, placements and fees, and invite '
         'a question. Never state any rule, number or fact.>"}'

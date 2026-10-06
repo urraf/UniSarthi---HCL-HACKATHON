@@ -36,12 +36,23 @@ Rules you must follow:
 8. Only if the evidence says nothing useful about the question, set "found" to false.
 9. Evidence with EXPIRED_ON is no longer in force. Start by saying the latest document on this topic expired
    on that date and no newer one is available, then summarise what it said, as past information only.
+10. Always name courses by their name (e.g. "Theory of Computation (ITITC501)"), never by code alone.
+11. If OVERVIEW is yes, give a short bullet list of the key rules in force from RULE DECISIONS (skip rules with
+    no value), each with its source, then invite the student to ask about any topic in detail.
 Reply with JSON only."""
 
 
 def answer(state: State) -> dict:
     evidence = state.get("evidence", [])
     tools_invoked = state.get("tools_invoked", [])
+
+    # "What are my subjects?": a plain list, no LLM needed
+    if state.get("intent") == "my_courses" and tools_invoked and isinstance(tools_invoked[0]["output"], list):
+        courses = tools_invoked[0]["output"]
+        names = "\n".join(f"• {c['course_name']} ({c['course_code']}), semester {c['semester']}, {c['credits']} credits"
+                          for c in courses)
+        return {"answer": f"You have {len(courses)} subjects:\n{names}", "used_evidence": [],
+                "explanation": "From your course records.", "conflicts": []}
 
     # The student's record does not exist (e.g. no attendance for that course): say so plainly
     errors = [t["output"]["error"] for t in tools_invoked if isinstance(t["output"], dict) and "error" in t["output"]]
@@ -92,7 +103,8 @@ def build_prompt(state: State) -> str:
         f"RULE DECISIONS (from the precedence policy):\n{json.dumps(decisions, indent=1)}\n\n"
         f"TOOL RESULTS (computed by code, use exactly):\n{json.dumps(tools_out, indent=1)}\n\n"
         f"UPCOMING DOCUMENTS (not yet in force): {json.dumps(state.get('upcoming', []))}\n"
-        f"ASSUMPTIONS made by the tools: {json.dumps(state.get('assumptions', []))}\n\n"
+        f"ASSUMPTIONS made by the tools: {json.dumps(state.get('assumptions', []))}\n"
+        f"OVERVIEW: {'yes' if state.get('overview') else 'no'}\n\n"
         'Return {"found": true|false, "answer": "1-3 sentence direct answer, starting with what the documents DO say", '
         '"explanation": "why, naming the rule/clause and any overridden or upcoming source", '
         '"used_evidence": ["E1", ...], "conflict_between": ["<doc_id>", ...] (documents that disagree, else [])}'

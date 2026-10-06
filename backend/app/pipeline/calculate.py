@@ -48,7 +48,16 @@ def calculate(state: State) -> dict:
     }
 
     invoked, rules, assumptions = [], list(state.get("rules", [])), []
-    for tool_name, arg_names in PLANS.get(state["intent"], []):
+    plan = PLANS.get(state["intent"], [])
+    if state["intent"] == "my_attendance" and not state.get("course_code"):
+        # No course named: attendance in every course the student has a record for
+        courses = [c["course_code"] for c in tools.get_courses(student_id)]
+        plan = [("get_attendance", ["course_code"])] * len(courses)
+    else:
+        courses = []
+    for tool_name, arg_names in plan:
+        if courses:
+            available["course_code"] = courses.pop(0)
         args = {name: available[name] for name in arg_names}
         start = time.time()
         output = TOOLS[tool_name](student_id, **args)
