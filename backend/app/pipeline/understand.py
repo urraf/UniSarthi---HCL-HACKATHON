@@ -20,6 +20,13 @@ from app.pipeline.guard import refuse
 from app.pipeline.state import COURSE_INTENTS, INTENTS, PERSONAL_INTENTS, State
 
 FIRST_PERSON = re.compile(r"\b(i|i'm|my|me|mine|am)\b", re.IGNORECASE)
+# "attendance / marks of a subject" -> about the student's own record
+RECORD_WORDS = re.compile(r"\b(attend\w*|marks?|results?|grades?)\b.*\b(subject|course|paper)s?\b|"
+                          r"\b(subject|course|paper)s?\b.*\b(attend\w*|marks?|results?)\b", re.IGNORECASE)
+# asking for the rule itself -> policy
+RULE_WORDS = re.compile(r"\b(minimum|required|requirement|criteria|rules?|policy|regulations?|condon\w*|relax\w*)\b",
+                        re.IGNORECASE)
+ALL_COURSES = re.compile(r"\b(all|every|each|overall)\b", re.IGNORECASE)
 
 SYSTEM = (
     "You label questions from university students. You never answer them. "
@@ -46,9 +53,15 @@ def understand(state: State) -> dict:
         fallback = True
 
     intent = label.get("intent") if label.get("intent") in INTENTS else "policy"
-    # A question without "I / my / me" cannot be about the asker's own records
+    question = state["question"]
+    # A logged-in student asking about attendance/marks "of a subject" means their OWN record,
+    # unless the question asks for the rule itself ("minimum attendance required").
+    if student and intent == "policy" and RECORD_WORDS.search(question) and not RULE_WORDS.search(question):
+        intent = "my_attendance" if re.search(r"attend", question, re.IGNORECASE) else "my_results"
+    # Without "I / my / me" and without a login, a question cannot be about the asker's own records
     # ("what is the name of the subject?" from a logged-in student is still about their own subjects)
-    if intent in PERSONAL_INTENTS and intent != "my_courses" and not FIRST_PERSON.search(state["question"]):
+    if intent in PERSONAL_INTENTS and intent != "my_courses" and not FIRST_PERSON.search(question) \
+            and (not student or RULE_WORDS.search(question)):
         intent = "policy"
     rule_parameters = [p for p in label.get("rule_parameters") or [] if p in parameters]
     course_code = match_course(label.get("course_code"), state["question"], courses)
@@ -75,8 +88,8 @@ def understand(state: State) -> dict:
     if intent in PERSONAL_INTENTS and not student:
         return {**out, **refuse("This is a personal question. Please log in (X-Student-Id) to see your own records.")}
 
-    if intent == "my_attendance" and not course_code:
-        return out  # no course named: step 4 shows the attendance in all the student's courses
+    if intent == "my_attendance" and not course_code and ALL_COURSES.search(question):
+        return out  # "all subjects": step 4 shows the attendance in every course
 
     if intent in COURSE_INTENTS and not course_code:
         with_record = student_courses(student["student_id"], RECORD_TABLE.get(intent))
@@ -87,9 +100,10 @@ def understand(state: State) -> dict:
                     "explanation": f"Your {what} is only recorded for courses you are currently registered in."}
         if len(with_record) == 1:  # only one possible course: no need to ask
             return {**out, "course_code": with_record[0]["course_code"]}
-        listing = ", ".join(f"{c['course_code']} {c['course_name']}" for c in with_record)
+        listing = ", ".join(f"{c['course_name']} ({c['course_code']})" for c in with_record)
         return {**out, "stop": True, "answer_type": "clarification_needed",
-                "answer": f"Which course do you mean? Your courses are: {listing}.",
+                "answer": f"Which subject do you mean? Your subjects: {listing}."
+                          + (" Or reply \"all\" to see every subject." if intent == "my_attendance" else ""),
                 "explanation": "The question needs a course, and none of your courses was clearly named."}
     return out
 
