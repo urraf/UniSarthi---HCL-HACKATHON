@@ -28,7 +28,9 @@ Rules you must follow:
 5. Evidence marked authority="5" is unofficial: it never decides anything. If you mention it, say it is
    unofficial and give the official rule instead.
 6. Mention upcoming changes (documents not yet in force) when relevant, and state any assumptions.
-7. If the evidence does not answer the question, set "found" to false.
+7. If the evidence answers only PART of the question, set "found" to true, answer the part that is known,
+   and say clearly what the documents do not cover.
+8. Only if the evidence says nothing useful about the question, set "found" to false.
 Reply with JSON only."""
 
 
@@ -51,8 +53,9 @@ def answer(state: State) -> dict:
            "answer": str(reply.get("answer", "")).strip(), "explanation": str(reply.get("explanation", "")).strip(),
            "conflicts": conflicts_from(state, reply.get("conflict_between", []))}
 
-    # Not found: the LLM saw nothing useful, and no tool produced a result either
-    if (not reply.get("found", True) or not out["answer"]) and not tools_invoked:
+    # Not found: no tool result AND the LLM based its answer on no real evidence.
+    # (A partial answer that cites evidence is kept: R3 says say what is known and what is not.)
+    if not tools_invoked and (not used or not out["answer"]):
         out.update({"answer_type": "not_found", "answer": config.NOT_FOUND_MESSAGE, "used_evidence": [],
                     "explanation": "The documents do not cover this. Try asking about attendance, exams, "
                                    "supplementary exams, grades, placements or fees."})
@@ -78,7 +81,7 @@ def build_prompt(state: State) -> str:
         f"TOOL RESULTS (computed by code, use exactly):\n{json.dumps(tools_out, indent=1)}\n\n"
         f"UPCOMING DOCUMENTS (not yet in force): {json.dumps(state.get('upcoming', []))}\n"
         f"ASSUMPTIONS made by the tools: {json.dumps(state.get('assumptions', []))}\n\n"
-        'Return {"found": true|false, "answer": "1-3 sentence direct answer", '
+        'Return {"found": true|false, "answer": "1-3 sentence direct answer, starting with what the documents DO say", '
         '"explanation": "why, naming the rule/clause and any overridden or upcoming source", '
         '"used_evidence": ["E1", ...], "conflict_between": ["<doc_id>", ...] (documents that disagree, else [])}'
     )

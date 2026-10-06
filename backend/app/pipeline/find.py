@@ -1,7 +1,7 @@
 """
 Step 3 - Find the evidence (no LLM).
 
-1. Search ChromaDB for chunks close in meaning to the question.
+1. Search ChromaDB with the question and the LLM's rewritten search query (better recall).
 2. Keep only chunks in force on as_of_date and in scope for this student (precedence step 1).
    Not-yet-effective documents are kept aside as "upcoming".
 3. Drop chunks whose clause was superseded by a level 1-2 document (precedence step 2).
@@ -17,8 +17,13 @@ from app.pipeline.state import State
 def find(state: State) -> dict:
     student, as_of = state.get("student"), state["as_of"]
 
-    hits = [h for h in vectors.search(state["question"], k=config.TOP_K * 3)
-            if h["similarity"] >= config.MIN_SIMILARITY]
+    # Search with the original question and the LLM's rewritten search query; keep each chunk's best score
+    best = {}
+    for query in {state["question"], state.get("search_query") or state["question"]}:
+        for h in vectors.search(query, k=config.TOP_K * 3):
+            if h["id"] not in best or h["similarity"] > best[h["id"]]["similarity"]:
+                best[h["id"]] = h
+    hits = [h for h in best.values() if h["similarity"] >= config.MIN_SIMILARITY]
 
     upcoming = [h for h in hits if h["effective_from"] > as_of and covers(h, student)]
     live = [h for h in hits if is_effective(h, as_of) and covers(h, student)]

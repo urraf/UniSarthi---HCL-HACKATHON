@@ -49,7 +49,8 @@ def understand(state: State) -> dict:
         intent = "policy"
     rule_parameters = [p for p in label.get("rule_parameters") or [] if p in parameters]
     course_code = match_course(label.get("course_code"), state["question"], courses)
-    out = {"intent": intent, "course_code": course_code, "rule_parameters": rule_parameters,
+    search_query = str(label.get("search_query") or "").strip()
+    out = {"intent": intent, "course_code": course_code, "rule_parameters": rule_parameters, "search_query": search_query,
            "llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback}
 
     if intent == "small_talk":
@@ -58,6 +59,14 @@ def understand(state: State) -> dict:
         reply = str(label.get("small_talk_reply") or "").strip() or small_talk_fallback(student)
         return {**out, "stop": True, "answer_type": "clarification_needed", "answer": reply,
                 "explanation": "Small talk: no university question was asked yet."}
+
+    if intent == "policy" and label.get("too_broad"):
+        # "What is the university policy?" names no topic: ask which one, listing the documents we really have
+        titles = [d["title"] for d in db.query("SELECT title FROM documents WHERE authority_level <= 4 ORDER BY authority_level")]
+        reply = (str(label.get("clarify_reply") or "").strip()
+                 or "Could you tell me which topic you mean? I can answer from: " + "; ".join(titles) + ".")
+        return {**out, "stop": True, "answer_type": "clarification_needed", "answer": reply,
+                "explanation": "The question is too broad: no specific topic was named."}
 
     if label.get("asks_about_other_student"):
         return {**out, **refuse("I can only share your own records. Requests for another student's data are not allowed.")}
@@ -76,6 +85,7 @@ def understand(state: State) -> dict:
 def build_prompt(question: str, courses: list[dict], parameters: list[str], name: str = "") -> str:
     return (
         f"Student's name: {name or 'unknown (not logged in)'}\n"
+        f"Documents available: {[d['title'] for d in db.query('SELECT title FROM documents WHERE authority_level <= 4')]}\n"
         f"Intents:\n{json.dumps(INTENTS, indent=1)}\n\n"
         f"The student's courses: {json.dumps([{'course_code': c['course_code'], 'course_name': c['course_name']} for c in courses])}\n"
         f"Rule parameters in the rule registry: {parameters}\n\n"
@@ -86,6 +96,11 @@ def build_prompt(question: str, courses: list[dict], parameters: list[str], name
         'Return {"intent": "<one intent>", "course_code": "<code from the student\'s courses or null>", '
         '"rule_parameters": ["<parameters the question is about>"], '
         '"asks_about_other_student": <true only if it asks for a specific other person\'s records>, '
+        '"search_query": "<the question rewritten as a short search query with specific terms the university '
+        'documents would use, e.g. \'exam policy\' -> \'end-semester examination eligibility attendance pass marks '
+        'supplementary examination\'>", '
+        '"too_broad": <true only if the question names no topic at all, e.g. \'what is the university policy?\'>, '
+        '"clarify_reply": "<only if too_broad: one friendly question asking which topic, mentioning the available documents>", '
         '"small_talk_reply": "<only for small_talk: 1-2 friendly sentences that greet the student by first name '
         'if known, say you help with university rules, attendance, results, exams, placements and fees, and invite '
         'a question. Never state any rule, number or fact.>"}'

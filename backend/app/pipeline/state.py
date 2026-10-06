@@ -38,6 +38,7 @@ class State(TypedDict, total=False):
     # ---- step 2: understand ----
     intent: str
     course_code: str | None
+    search_query: str           # the question rewritten for document search (better recall)
     rule_parameters: list[str]  # rule registry parameters the question is about
 
     # ---- step 3: find ----
