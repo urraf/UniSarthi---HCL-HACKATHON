@@ -16,6 +16,7 @@ import requests
 from app import config
 
 GROQ_BASE_URL = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+MAX_ATTEMPTS = 3
 
 
 class LLMError(Exception):
@@ -27,7 +28,7 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
     Send one prompt and return (parsed_json, usage).
 
     usage = {"calls": 1, "tokens": <total tokens>, "ms": <latency>}
-    Retries once if the reply is not valid JSON.
+    Retries if the reply is not valid JSON or the server is rate limiting us.
     Callers catch LLMError and fall back to simple rules.
     """
     if config.LLM_PROVIDER == "mock":
@@ -58,10 +59,15 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
 
     usage = {"calls": 0, "tokens": 0, "ms": 0}
     last_error = ""
-    for _attempt in range(2):
+    for _attempt in range(MAX_ATTEMPTS):
         start = time.time()
         try:
             resp = requests.post(url, json=body, headers=headers, timeout=120)
+            if resp.status_code == 429:
+                # Rate limited (free tiers): wait as long as the server asks (max 10 s), then retry
+                last_error = "rate limited (429)"
+                time.sleep(min(float(resp.headers.get("retry-after", 2)), 10))
+                continue
             resp.raise_for_status()
         except requests.RequestException as e:
             raise LLMError(f"LLM request failed: {e}") from e
@@ -77,7 +83,7 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
         except ValueError as e:
             last_error = str(e)  # try once more
 
-    raise LLMError(f"LLM did not return valid JSON: {last_error}")
+    raise LLMError(f"LLM failed after {MAX_ATTEMPTS} attempts: {last_error}")
 
 
 def _parse_json(text: str) -> dict:
