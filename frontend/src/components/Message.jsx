@@ -1,6 +1,7 @@
 // One chat bubble. Assistant answers also show their type, tools, rules, conflicts and audit (sources are not shown to students).
 import { useEffect, useState } from "react";
 import { getAudit } from "../api.js";
+import FormattedText from "./FormattedText.jsx";
 
 // Friendly labels for the 6 answer types of the guide
 const TYPE_LABELS = {
@@ -37,7 +38,11 @@ export default function Message({ message }) {
     <div className={`bubble-row ${role}`}>
       <div className={`bubble ${role}${error ? " error-bubble" : ""}`}>
         {response && <span className={`badge ${response.answer_type}`}>{TYPE_LABELS[response.answer_type]}</span>}
-        <p className="bubble-text">{shown}</p>
+        {role === "assistant" ? (
+          <div className="bubble-text"><FormattedText text={shown} /></div>
+        ) : (
+          <p className="bubble-text">{shown}</p>
+        )}
         {response && done && <Details response={response} />}
       </div>
     </div>

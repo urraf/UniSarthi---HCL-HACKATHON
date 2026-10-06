@@ -69,6 +69,10 @@ button { font: inherit; cursor: pointer; }
 .bubble.assistant { background: var(--bg); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
 .bubble.error-bubble { border-color: var(--bad); color: var(--bad); }
 .bubble-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.formatted p { margin: 0 0 6px; }
+.formatted p:last-child { margin-bottom: 0; }
+.formatted ul { margin: 4px 0 6px; padding-left: 20px; }
+.formatted li { margin: 3px 0; }
 .bubble .badge { background: var(--card); }
 
 .details { margin-top: 8px; font-size: 13px; }

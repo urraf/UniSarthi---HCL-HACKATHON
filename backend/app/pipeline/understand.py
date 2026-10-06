@@ -34,11 +34,13 @@ def understand(state: State) -> dict:
 
     llm_calls, tokens = state.get("llm_calls", 0), state.get("tokens", 0)
     fallback = False
+    models_used = state.get("models_used", [])
     try:
         label, usage = chat_json(SYSTEM, build_prompt(state["question"], courses, parameters,
                                                        student["full_name"] if student else ""))
         llm_calls += usage["calls"]
         tokens += usage["tokens"]
+        models_used = state.get("models_used", []) + [usage["model"]]
     except LLMError:
         label = keyword_fallback(state["question"], courses, parameters)
         fallback = True
@@ -52,7 +54,8 @@ def understand(state: State) -> dict:
     course_code = match_course(label.get("course_code"), state["question"], courses)
     search_query = str(label.get("search_query") or "").strip()
     out = {"intent": intent, "course_code": course_code, "rule_parameters": rule_parameters, "search_query": search_query,
-           "llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback}
+           "llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback,
+           "models_used": models_used}
 
     if intent == "small_talk":
         # No documents, no facts: just a friendly reply that invites a real question.

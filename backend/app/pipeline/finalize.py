@@ -95,7 +95,7 @@ def save_audit(state: State, response: dict) -> None:
         "rules_applied": response["applied_rules"],
         "conflicts_detected": response["conflicts_detected"],
         "answer_type": response["answer_type"],
-        "model": config.active_model_name(),
+        "model": ", ".join(dict.fromkeys(state.get("models_used", []))) or config.active_model_name(),
         "llm_calls": state.get("llm_calls", 0),
         "llm_fallback_used": state.get("llm_fallback", False),
         "tokens": state.get("tokens", 0),

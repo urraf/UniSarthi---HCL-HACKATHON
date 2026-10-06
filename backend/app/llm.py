@@ -27,7 +27,7 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
     """
     Send one prompt and return (parsed_json, usage).
 
-    usage = {"calls": 1, "tokens": <total tokens>, "ms": <latency>}
+    usage = {"calls": 1, "tokens": <total tokens>, "ms": <latency>, "model": <model that answered>}
     Retries if the reply is not valid JSON or the server is rate limiting us.
     Callers catch LLMError and fall back to simple rules.
     """
@@ -77,7 +77,7 @@ def _call(url: str, headers: dict, model: str, system: str, user: str, temperatu
         ],
     }
 
-    usage = {"calls": 0, "tokens": 0, "ms": 0}
+    usage = {"calls": 0, "tokens": 0, "ms": 0, "model": model}
     last_error = ""
     for _attempt in range(MAX_ATTEMPTS):
         start = time.time()

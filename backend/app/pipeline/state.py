@@ -66,4 +66,5 @@ class State(TypedDict, total=False):
     stop: bool                  # True -> skip to finalize
     llm_calls: int
     tokens: int
+    models_used: list[str]      # models that actually answered (Groq fallbacks / local Ollama)
     llm_fallback: bool          # True if a step used keyword/template fallback instead of the LLM

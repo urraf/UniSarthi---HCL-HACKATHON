@@ -12,8 +12,9 @@ built later from those ids' metadata. Any id it invents is dropped.
 If the LLM is unavailable, a simple template answer is built from the same facts.
 """
 import json
+import re
 
-from app import config
+from app import config, db
 from app.llm import LLMError, chat_json
 from app.pipeline.state import State
 
@@ -39,6 +40,10 @@ Rules you must follow:
 10. Always name courses by their name (e.g. "Theory of Computation (ITITC501)"), never by code alone.
 11. If OVERVIEW is yes, give a short bullet list of the key rules in force from RULE DECISIONS (skip rules with
     no value), each with its source, then invite the student to ask about any topic in detail.
+12. Every number or date you state must appear in the evidence, RULE DECISIONS or TOOL RESULTS. Report each
+    relevant rule decision separately with its own value (never merge two rules into one). If evidence passages
+    disagree on a number, use the value from RULE DECISIONS or the highest-authority source only.
+13. Never mention rule ids, evidence ids (E1...) or internal parameter names in the answer or explanation.
 Reply with JSON only."""
 
 
@@ -61,17 +66,21 @@ def answer(state: State) -> dict:
                 "explanation": "This information is not in your records, so it cannot be calculated."}
     llm_calls, tokens = state.get("llm_calls", 0), state.get("tokens", 0)
     fallback = state.get("llm_fallback", False)
+    models_used = state.get("models_used", [])
     try:
         reply, usage = chat_json(SYSTEM, build_prompt(state))
         llm_calls += usage["calls"]
         tokens += usage["tokens"]
+        models_used = state.get("models_used", []) + [usage["model"]]
     except LLMError:
         reply = template_answer(state)
         fallback = True
 
+    reply["answer"] = clean_ids(str(reply.get("answer", "")))
+    reply["explanation"] = clean_ids(str(reply.get("explanation", "")))
     valid_ids = {e["evidence_id"] for e in evidence}
     used = [i for i in reply.get("used_evidence", []) if i in valid_ids]
-    out = {"llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback, "used_evidence": used,
+    out = {"llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback, "models_used": models_used, "used_evidence": used,
            "answer": str(reply.get("answer", "")).strip(), "explanation": str(reply.get("explanation", "")).strip(),
            "conflicts": conflicts_from(state, reply.get("conflict_between", []))}
 
@@ -82,6 +91,17 @@ def answer(state: State) -> dict:
                     "explanation": "The documents do not cover this. Try asking about attendance, exams, "
                                    "supplementary exams, grades, placements or fees."})
     return out
+
+
+def clean_ids(text: str) -> str:
+    """Remove internal ids the model sometimes leaks: rule ids (ATT-MIN-01), "rule decision", evidence ids (E1)."""
+    rule_ids = [r["rule_id"] for r in db.query("SELECT rule_id FROM rule_registry")]
+    for rid in sorted(rule_ids, key=len, reverse=True):
+        any_dash = "[-\u2010\u2011\u2012\u2013]".join(re.escape(part) for part in rid.split("-"))  # models vary the hyphen
+        text = re.sub(rf"\s*\(?(?:(?:the )?rule decision\s*)?{any_dash}\)?", "", text)
+    text = re.sub(r"\s*\((?:rule decision|E\d+(?:,\s*E\d+)*)\)", "", text)
+    text = re.sub(r"\b(?:the )?rule decisions?\b", "the rules", text)
+    return re.sub(r"[ \t]+([,.;)])", r"\1", text).strip()
 
 
 def build_prompt(state: State) -> str:
@@ -105,8 +125,13 @@ def build_prompt(state: State) -> str:
         f"UPCOMING DOCUMENTS (not yet in force): {json.dumps(state.get('upcoming', []))}\n"
         f"ASSUMPTIONS made by the tools: {json.dumps(state.get('assumptions', []))}\n"
         f"OVERVIEW: {'yes' if state.get('overview') else 'no'}\n\n"
-        'Return {"found": true|false, "answer": "1-3 sentence direct answer, starting with what the documents DO say", '
-        '"explanation": "why, naming the rule/clause and any overridden or upcoming source", '
+        'Return {"found": true|false, '
+        '"answer": "a direct answer formatted for a chat: one short opening sentence, then (if there is more than '
+        'one point) a list with each point on its own line starting with \'- \'. Put key numbers and dates in '
+        '**bold**. No headings, no tables, at most 6 points.", '
+        '"explanation": "1-2 plain sentences: which document and clause this comes from (by title, e.g. \'B.Tech '
+        'Regulations 2019, clause 11.2\'), and any newer or overridden source. Never use internal names like '
+        'min_attendance_pct, rule ids or evidence ids.", '
         '"used_evidence": ["E1", ...], "conflict_between": ["<doc_id>", ...] (documents that disagree, else [])}'
     )
 
