@@ -23,6 +23,7 @@ from app import auth, config, db, vectors
 from app.account_routes import current, router as account_router, save_exchange
 from app.ingest import DocumentMeta, ingest_document
 from app.llm import LLMError, chat_json
+from app.mongo import get_db
 from app.pipeline.graph import run
 from app.pipeline.understand import student_courses
 from app.schemas import AskRequest, AskResponse, IngestResponse
@@ -37,11 +38,15 @@ app.include_router(account_router)
 @app.on_event("startup")
 def create_startup_accounts():
     """First staff account from .env, and (CREATE_DEMO_ACCOUNTS=true) demo student accounts without email."""
-    if config.BOOTSTRAP_ADMIN_ID and config.BOOTSTRAP_ADMIN_PASSWORD:
-        auth.create_admin(config.BOOTSTRAP_ADMIN_ID, config.BOOTSTRAP_ADMIN_PASSWORD)
-    if os.getenv("CREATE_DEMO_ACCOUNTS", "false").lower() == "true" and os.getenv("DEFAULT_STUDENT_PASSWORD"):
-        from scripts.create_logins import create_demo_accounts
-        create_demo_accounts(os.getenv("DEFAULT_STUDENT_PASSWORD"))
+    # MongoDB down must not stop the API: questions and documents do not need it, only accounts and chats do
+    try:
+        if config.BOOTSTRAP_ADMIN_ID and config.BOOTSTRAP_ADMIN_PASSWORD:
+            auth.create_admin(config.BOOTSTRAP_ADMIN_ID, config.BOOTSTRAP_ADMIN_PASSWORD)
+        if os.getenv("CREATE_DEMO_ACCOUNTS", "false").lower() == "true" and os.getenv("DEFAULT_STUDENT_PASSWORD"):
+            from scripts.create_logins import create_demo_accounts
+            create_demo_accounts(os.getenv("DEFAULT_STUDENT_PASSWORD"))
+    except Exception as e:  # noqa: BLE001 - log any connection problem and keep running
+        print(f"WARNING: MongoDB not reachable at startup, accounts/chats unavailable until it is: {e}", flush=True)
 
 
 # ---------- Identity ----------
@@ -72,7 +77,10 @@ def ask(body: AskRequest, x_student_id: str | None = Header(default=None),
     student_id, logged_in = identify(x_student_id, authorization)
     response = run(body.question, student_id, body.as_of_date)
     if logged_in:  # keep the chat of logged-in students (MongoDB)
-        response["conversation_id"] = save_exchange(student_id, body.conversation_id, body.question, response)
+        try:
+            response["conversation_id"] = save_exchange(student_id, body.conversation_id, body.question, response)
+        except Exception as e:  # noqa: BLE001 - the answer still goes out if the chat cannot be saved
+            print(f"WARNING: chat not saved (MongoDB): {e}", flush=True)
     return response
 
 
@@ -103,6 +111,11 @@ def health():
         status["vector_store"] = f"ok ({vectors.collection().count()} chunks)"
     except Exception as e:  # noqa: BLE001
         status["vector_store"] = f"error: {e}"
+    try:
+        get_db().command("ping")
+        status["mongodb"] = "ok"
+    except Exception as e:  # noqa: BLE001
+        status["mongodb"] = f"error: {str(e)[:200]}"
     try:
         chat_json("Reply with JSON only.", 'Return {"ok": true}')
         status["llm"] = f"ok ({config.active_model_name()})"

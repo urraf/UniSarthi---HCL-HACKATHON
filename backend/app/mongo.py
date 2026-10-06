@@ -28,8 +28,13 @@ def get_db():
         client = mongomock.MongoClient()
     else:
         client = MongoClient(config.MONGODB_URI, serverSelectionTimeoutMS=5000)
-    _db = client[config.MONGODB_DB]
+    db = client[config.MONGODB_DB]
+    _create_indexes(db)
+    _db = db  # remembered only after a successful connection, so a failed start is retried next time
+    return _db
 
+
+def _create_indexes(_db) -> None:
     _db.users.create_index("student_id", unique=True)
     _db.users.create_index("roll_number", unique=True)
     _db.users.create_index("email", unique=True, sparse=True)  # demo accounts may have no email
@@ -39,4 +44,3 @@ def get_db():
     _db.messages.create_index([("conversation_id", ASCENDING), ("created_at", ASCENDING)])
     _db.conversations.create_index([("student_id", ASCENDING), ("updated_at", ASCENDING)])
     _db.conversations.create_index("conversation_id", unique=True)
-    return _db
