@@ -1,7 +1,7 @@
 """
 Source Precedence Policy (Annex A of the guide), written as plain code.
 
-When documents (or rules taken from documents) disagree, we decide the winner in 5 steps:
+When documents (or rules taken from documents) disagree , we decide the winner in 5 steps:
   1. Applicability   - only items in force on as_of_date and in scope for this student
   2. Supersession    - an item explicitly replaced by a level 1 or 2 document is removed
   3. Authority       - lower level number wins (1 = regulations ... 5 = unofficial)
