@@ -122,7 +122,18 @@ cd backend && .venv/bin/python ../eval/run_eval.py --label final --pause 8     #
 .venv/bin/python ../eval/compare_retrieval.py                                 # embedding comparison
 ```
 
-Results: `eval/report_final.md`. The `--pause` keeps us under the Groq free tier (8,000 tokens/minute).
+Results on the NSUT corpus (`eval/report_final.md`, Groq qwen3.8-27b, MiniLM, top-5):
+
+| Metric | Result |
+|---|---|
+| Answer correctness | 96% (26/27) |
+| Citation accuracy | 100% (14/14) |
+| Abstention accuracy | 96% (26/27) |
+| Tool-result correctness | 100% (9/9) |
+| Retrieval hit rate@k | 100% (14/14) |
+| LLM calls / tokens per question | 1.63 / 2642 |
+
+The one miss (an off-topic cricket question answered with a friendly redirect instead of `not_found`) was fixed afterwards by narrowing the small-talk intent. Latency (p50 15 s) is dominated by the `--pause` and Groq free-tier rate limits; a single question in the UI takes a few seconds.
 
 ## Assumptions
 

@@ -1,0 +1,136 @@
+{
+  "trace_id": "1d3dfe3d",
+  "timestamp": "2026-10-06T10:00:23+00:00",
+  "student_id": "S1004",
+  "question": "If I clear Theory of Computation, can I register for placements?",
+  "question_category": "placement_whatif",
+  "as_of_date": "2025-03-01",
+  "sources_retrieved": [
+    {
+      "doc_id": "NSUT-BTECH-REG-2019",
+      "section": "12.6",
+      "score": 0.643
+    },
+    {
+      "doc_id": "NSUT-BTECH-REG-2019",
+      "section": "7.6",
+      "score": 0.625
+    },
+    {
+      "doc_id": "TNP-POLICY-2024-25",
+      "section": "",
+      "score": 0.677
+    },
+    {
+      "doc_id": "TNP-POLICY-2024-25",
+      "section": "",
+      "score": 0.662
+    },
+    {
+      "doc_id": "NSUT-BTECH-RULES-2019",
+      "section": "6.5",
+      "score": 0.614
+    }
+  ],
+  "precedence_decision": "PLACE-CGPA-01 applies (no conflict); DEGREE-CGPA-01 applies (no conflict); SUPP-01 applies (no conflict); PLACE-DROP-01 applies (no conflict)",
+  "tools_invoked": [
+    {
+      "tool": "get_results",
+      "input": {
+        "course_code": "ITITC501"
+      },
+      "output": [
+        {
+          "course_code": "ITITC501",
+          "course_name": "Theory of Computation",
+          "exam_session": "2025-DEC",
+          "exam_type": "REGULAR",
+          "internal_marks": 18,
+          "external_marks": 15,
+          "total_marks": 33,
+          "max_marks": 100,
+          "result": "FAIL"
+        }
+      ],
+      "status": "ok",
+      "ms": 0
+    },
+    {
+      "tool": "check_supplementary_eligibility",
+      "input": {
+        "course_code": "ITITC501",
+        "as_of": "2025-03-01"
+      },
+      "output": {
+        "result": "NOT_AVAILABLE",
+        "course_code": "ITITC501",
+        "latest_result": "FAIL",
+        "reason": "there are no supplementary examinations; the course must be re-registered (see the backlog / make-up exam documents)"
+      },
+      "status": "ok",
+      "ms": 0
+    },
+    {
+      "tool": "check_placement_eligibility",
+      "input": {
+        "as_of": "2025-03-01",
+        "assume_cleared": [
+          "ITITC501"
+        ]
+      },
+      "output": {
+        "result": "NOT_ELIGIBLE",
+        "cgpa": 5.0,
+        "cgpa_required": "no university-wide minimum (each company sets its own)",
+        "cgpa_ok": true,
+        "active_backlogs_now": 4,
+        "active_backlogs_used": 3,
+        "backlogs_allowed": "<= 2",
+        "backlogs_ok": false,
+        "assumptions": [
+          "Assumes you clear ITITC501, reducing active backlogs by 1",
+          "Assumes your CGPA stays the same (the new grade is not known yet)"
+        ]
+      },
+      "status": "ok",
+      "ms": 0
+    }
+  ],
+  "rules_applied": [
+    {
+      "rule_id": "PLACE-CGPA-01",
+      "parameter": "univ_min_cgpa_placement",
+      "value": "=none",
+      "source_doc_id": "TNP-POLICY-2024-25",
+      "source_section": "Eligibility (PDF p.4)"
+    },
+    {
+      "rule_id": "DEGREE-CGPA-01",
+      "parameter": "min_cgpa_degree",
+      "value": ">=5.00",
+      "source_doc_id": "NSUT-BTECH-REG-2019",
+      "source_section": "Cl. 15.1 (PDF p.20)"
+    },
+    {
+      "rule_id": "SUPP-01",
+      "parameter": "supplementary_allowed",
+      "value": "=false",
+      "source_doc_id": "NSUT-BTECH-REG-2019",
+      "source_section": "Cl. 12.3 (PDF p.19)"
+    },
+    {
+      "rule_id": "PLACE-DROP-01",
+      "parameter": "max_dropped_backlogs",
+      "value": "<=2",
+      "source_doc_id": "TNP-POLICY-2024-25",
+      "source_section": "Drop Subject Rules (PDF p.11)"
+    }
+  ],
+  "conflicts_detected": [],
+  "answer_type": "calculated",
+  "model": "groq:qwen/qwen3.8-27b",
+  "llm_calls": 2,
+  "llm_fallback_used": false,
+  "tokens": 4110,
+  "latency_ms": 24333
+}

@@ -1,0 +1,19 @@
+{
+  "trace_id": "4e4736b5",
+  "timestamp": "2026-10-06T10:01:21+00:00",
+  "student_id": null,
+  "question": "Who won the inter-college cricket tournament last year?",
+  "question_category": "policy",
+  "as_of_date": "2026-10-06",
+  "sources_retrieved": [],
+  "precedence_decision": "",
+  "tools_invoked": [],
+  "rules_applied": [],
+  "conflicts_detected": [],
+  "answer_type": "not_found",
+  "model": "groq:qwen/qwen3.8-27b",
+  "llm_calls": 1,
+  "llm_fallback_used": false,
+  "tokens": 1091,
+  "latency_ms": 6207
+}
