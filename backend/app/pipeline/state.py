@@ -16,9 +16,11 @@ INTENTS = {
     "supplementary_eligibility": "can the student take the supplementary exam in a course",
     "placement_eligibility": "can the student register for campus placements",
     "placement_whatif": "placement eligibility IF the student passes a failed course (what-if)",
+    "small_talk": "greetings, thanks, 'who are you', 'what can you do', or chit-chat with no university question",
 }
 # Intents that need the logged-in student's own records
-PERSONAL_INTENTS = {i for i in INTENTS if i != "policy"}
+PERSONAL_INTENTS = {"my_attendance", "my_results", "exam_eligibility", "supplementary_eligibility",
+                    "placement_eligibility", "placement_whatif"}
 # Intents that need to know which course
 COURSE_INTENTS = {"my_attendance", "exam_eligibility", "supplementary_eligibility", "placement_whatif"}
 

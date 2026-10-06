@@ -53,7 +53,9 @@ def answer(state: State) -> dict:
 
     # Not found: the LLM saw nothing useful, and no tool produced a result either
     if (not reply.get("found", True) or not out["answer"]) and not tools_invoked:
-        out.update({"answer_type": "not_found", "answer": config.NOT_FOUND_MESSAGE, "used_evidence": []})
+        out.update({"answer_type": "not_found", "answer": config.NOT_FOUND_MESSAGE, "used_evidence": [],
+                    "explanation": "The documents do not cover this. Try asking about attendance, exams, "
+                                   "supplementary exams, grades, placements or fees."})
     return out
 
 

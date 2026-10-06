@@ -35,7 +35,8 @@ def understand(state: State) -> dict:
     llm_calls, tokens = state.get("llm_calls", 0), state.get("tokens", 0)
     fallback = False
     try:
-        label, usage = chat_json(SYSTEM, build_prompt(state["question"], courses, parameters))
+        label, usage = chat_json(SYSTEM, build_prompt(state["question"], courses, parameters,
+                                                       student["full_name"] if student else ""))
         llm_calls += usage["calls"]
         tokens += usage["tokens"]
     except LLMError:
@@ -51,6 +52,13 @@ def understand(state: State) -> dict:
     out = {"intent": intent, "course_code": course_code, "rule_parameters": rule_parameters,
            "llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback}
 
+    if intent == "small_talk":
+        # No documents, no facts: just a friendly reply that invites a real question.
+        # The guide has no "chat" answer type, so we use clarification_needed ("what would you like to know?").
+        reply = str(label.get("small_talk_reply") or "").strip() or small_talk_fallback(student)
+        return {**out, "stop": True, "answer_type": "clarification_needed", "answer": reply,
+                "explanation": "Small talk: no university question was asked yet."}
+
     if label.get("asks_about_other_student"):
         return {**out, **refuse("I can only share your own records. Requests for another student's data are not allowed.")}
 
@@ -65,8 +73,9 @@ def understand(state: State) -> dict:
     return out
 
 
-def build_prompt(question: str, courses: list[dict], parameters: list[str]) -> str:
+def build_prompt(question: str, courses: list[dict], parameters: list[str], name: str = "") -> str:
     return (
+        f"Student's name: {name or 'unknown (not logged in)'}\n"
         f"Intents:\n{json.dumps(INTENTS, indent=1)}\n\n"
         f"The student's courses: {json.dumps([{'course_code': c['course_code'], 'course_name': c['course_name']} for c in courses])}\n"
         f"Rule parameters in the rule registry: {parameters}\n\n"
@@ -76,7 +85,10 @@ def build_prompt(question: str, courses: list[dict], parameters: list[str]) -> s
         f"<question>{question}</question>\n\n"
         'Return {"intent": "<one intent>", "course_code": "<code from the student\'s courses or null>", '
         '"rule_parameters": ["<parameters the question is about>"], '
-        '"asks_about_other_student": <true only if it asks for a specific other person\'s records>}'
+        '"asks_about_other_student": <true only if it asks for a specific other person\'s records>, '
+        '"small_talk_reply": "<only for small_talk: 1-2 friendly sentences that greet the student by first name '
+        'if known, say you help with university rules, attendance, results, exams, placements and fees, and invite '
+        'a question. Never state any rule, number or fact.>"}'
     )
 
 
@@ -100,9 +112,21 @@ def match_course(llm_code: str | None, question: str, courses: list[dict]) -> st
     return matches[0] if len(matches) == 1 else None
 
 
+def small_talk_fallback(student: dict | None) -> str:
+    name = f" {student['full_name'].split()[0]}" if student else ""
+    return (f"Hi{name}! I can help with university rules and procedures, and check your attendance, results, "
+            "exam, supplementary and placement eligibility. What would you like to know?")
+
+
+SMALL_TALK = re.compile(r"^\s*(hi+|hello|hey|good (morning|afternoon|evening)|thanks?( you)?|thank you|ok(ay)?|"
+                        r"who are you\??|what can you do\??|help)\W*$", re.IGNORECASE)
+
+
 def keyword_fallback(question: str, courses: list[dict], parameters: list[str]) -> dict:
     """Used only when the LLM is off or failing (LLM_PROVIDER=mock, network error)."""
     q = question.lower()
+    if SMALL_TALK.match(question):
+        return {"intent": "small_talk", "course_code": None, "rule_parameters": [], "asks_about_other_student": False}
     if "placement" in q and re.search(r"\bif\b", q):
         intent = "placement_whatif"
     elif "placement" in q and re.search(r"\b(i|my|am)\b", q):

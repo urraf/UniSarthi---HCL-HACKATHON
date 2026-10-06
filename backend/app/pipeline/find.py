@@ -37,7 +37,8 @@ def find(state: State) -> dict:
     out = {"evidence": evidence, "upcoming": _one_per_doc(upcoming), "rules": rules}
     if not evidence and state["intent"] == "policy":
         out.update({"stop": True, "answer_type": "not_found", "answer": config.NOT_FOUND_MESSAGE,
-                    "explanation": "No authorised document passage was relevant enough to answer."})
+                    "explanation": "No authorised document passage was relevant enough to answer. "
+                                   "Try asking about attendance, exams, supplementary exams, grades, placements or fees."})
     return out
 
 
