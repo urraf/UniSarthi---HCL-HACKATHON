@@ -23,8 +23,12 @@ FIRST_PERSON = re.compile(r"\b(i|i'm|my|me|mine|am)\b", re.IGNORECASE)
 # "attendance / marks of a subject" -> about the student's own record
 RECORD_WORDS = re.compile(r"\b(attend\w*|marks?|results?|grades?)\b.*\b(subject|course|paper)s?\b|"
                           r"\b(subject|course|paper)s?\b.*\b(attend\w*|marks?|results?)\b", re.IGNORECASE)
+# the student's own profile fields
+PROFILE_WORDS = re.compile(r"\b(cgpa|sgpa|gpa|backlogs?|roll\s*(?:no|number)?|rollnumber|semester|batch|programme|program|"
+                           r"branch|my name|email)\b", re.IGNORECASE)
 # asking for the rule itself -> policy
-RULE_WORDS = re.compile(r"\b(minimum|required|requirement|criteria|rules?|policy|regulations?|condon\w*|relax\w*)\b",
+RULE_WORDS = re.compile(r"\b(minimum|required|requirement|needed|need|criteria|rules?|policy|regulations?|"
+                        r"condon\w*|relax\w*|honours?|eligib\w*|allowed|maximum|calculated|how is)\b",
                         re.IGNORECASE)
 ALL_COURSES = re.compile(r"\b(all|every|each|overall)\b", re.IGNORECASE)
 
@@ -54,13 +58,17 @@ def understand(state: State) -> dict:
 
     intent = label.get("intent") if label.get("intent") in INTENTS else "policy"
     question = state["question"]
+    # A logged-in student asking about CGPA / backlogs / roll number etc. means their OWN profile (even with typos
+    # like "backlogs of min"), unless the question asks for the rule itself ("CGPA needed for honours").
+    if student and PROFILE_WORDS.search(question) and not RULE_WORDS.search(question) and intent in ("policy", "my_results"):
+        intent = "my_profile"
     # A logged-in student asking about attendance/marks "of a subject" means their OWN record,
     # unless the question asks for the rule itself ("minimum attendance required").
     if student and intent == "policy" and RECORD_WORDS.search(question) and not RULE_WORDS.search(question):
         intent = "my_attendance" if re.search(r"attend", question, re.IGNORECASE) else "my_results"
     # Without "I / my / me" and without a login, a question cannot be about the asker's own records
     # ("what is the name of the subject?" from a logged-in student is still about their own subjects)
-    if intent in PERSONAL_INTENTS and intent != "my_courses" and not FIRST_PERSON.search(question) \
+    if intent in PERSONAL_INTENTS and intent not in ("my_courses", "my_profile") and not FIRST_PERSON.search(question) \
             and (not student or RULE_WORDS.search(question)):
         intent = "policy"
     rule_parameters = [p for p in label.get("rule_parameters") or [] if p in parameters]

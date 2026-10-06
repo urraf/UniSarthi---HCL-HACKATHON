@@ -12,7 +12,7 @@ INTENTS = {
     "policy": "general question about university rules, procedures (e.g. how to apply), fees or documents; not about the student's own records",
     "my_courses": "the student's own subjects / courses: their names, how many, which ones",
     "my_attendance": "the student's own attendance (in one course, or in all courses if none is named)",
-    "my_profile": "the student's own CGPA, number of backlogs, current semester, programme or batch",
+    "my_profile": "the student's own roll number, name, email, CGPA, number of backlogs, current semester, programme or batch",
     "my_results": "the student's own marks or results in courses",
     "exam_eligibility": "can the student appear in the end-semester exam of a course",
     "supplementary_eligibility": "can the student take the supplementary exam in a course",

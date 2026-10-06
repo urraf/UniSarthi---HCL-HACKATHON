@@ -56,6 +56,8 @@ def answer(state: State) -> dict:
         st = tools_invoked[0]["output"]
         backlogs = st["active_backlogs"]
         return {"answer": f"Here is your record, {st['full_name'].split()[0]}:\n"
+                          f"- Name: **{st['full_name']}**\n"
+                          f"- Roll number: **{st.get('roll_number') or '-'}**\n"
                           f"- CGPA: **{st['cgpa']:.2f}**\n"
                           f"- Active backlogs: **{backlogs}**{' (none)' if backlogs == 0 else ''}\n"
                           f"- Programme: {st['programme']}, batch **{st['batch_year']}**, semester **{st['current_semester']}**",
