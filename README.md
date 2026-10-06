@@ -29,3 +29,15 @@ python scripts/load_students.py       # loads CSVs into SQLite + creates logins
 ```
 
 Judges' data: `python scripts/load_students.py --dir path/to/test_students/`
+
+## Phase 2: rules, precedence and tools
+
+- `backend/data/rules_seed.csv`: every threshold (attendance %, pass mark, CGPA cut-off...) with the document and clause it comes from.
+- `backend/data/source_register.csv`: every document with authority level, version, dates, scope and what it supersedes (Annex B).
+- `backend/app/precedence.py`: the guide's 5-step Source Precedence Policy (Annex A) as plain code.
+- `backend/app/tools.py`: 7 deterministic tools. No LLM, no thresholds in code.
+
+```bash
+python scripts/seed.py      # documents + rules + students + logins
+python -m pytest -q         # 18 tests, incl. the guide's worked example
+```

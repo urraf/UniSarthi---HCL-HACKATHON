@@ -1,0 +1,7 @@
+doc_id,title,issuer,authority_level,doc_type,version,effective_from,effective_to,supersedes,scope_programmes,scope_batches,provenance,retrieved_on,synthetic,file_name
+ACAD-REG-2024,Academic Regulations for B.Tech (sample),Office of the Dean (Academics),1,regulation,3.1,2024-07-01,,,ALL,ALL,SAMPLE - replace with your university's published regulations,2026-10-06,Y,academic_regulations_2024.md
+ACAD-2026-08,Circular: Revision of Minimum Attendance Requirement,Office of the Dean (Academics),2,circular,1.0,2026-08-01,,ACAD-REG-2024#7.2,ALL,ALL,Synthetic circular created to demonstrate supersession,2026-10-06,Y,circular_attendance_2026_08.md
+PLACE-POL-2025,Training and Placement Policy (sample),Training and Placement Office,2,notice,2.0,2025-07-01,,,ALL,ALL,SAMPLE - replace with your university's placement policy,2026-10-06,Y,placement_policy_2025.md
+PLACE-2026-11,Circular: Revised CGPA Criterion for Placements (sample),Training and Placement Office,2,circular,1.0,2026-12-01,,PLACE-POL-2025#3.1,ALL,2024+,SAMPLE - demonstrates a not-yet-effective document,2026-10-06,Y,placement_circular_2026_11.md
+FAQ-2026,Student Help-desk FAQ (sample),Student Help Desk,4,faq,1.0,2026-09-15,,,ALL,ALL,SAMPLE - replace with your university's FAQ page,2026-10-06,Y,helpdesk_faq_2026.md
+UNOFF-2026,Student Council Notes (unofficial),Student Council,5,unofficial,1.0,2026-09-01,,,ALL,ALL,Synthetic unofficial note containing an injected instruction (tests R8),2026-10-06,Y,student_council_notes.md
