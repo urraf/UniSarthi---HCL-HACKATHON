@@ -9,8 +9,12 @@ staff login, and chat history. Data lives in MongoDB (see mongo.py).
   POST /auth/reset-password    {email, otp, new_password}
   POST /auth/forgot-roll       {email}                          -> emails the roll number
   POST /admin/login            {admin_id, password}             -> staff token
-  GET  /history  /  DELETE /history                             -> the student's chat
+  GET  /auth/session                                            -> is my login still valid?
+  GET  /conversations, GET/DELETE /conversations/{id}          -> the student's saved chats
 """
+import uuid
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 
@@ -159,16 +163,59 @@ def forgot_roll(body: EmailOnly):
     return GENERIC_SENT
 
 
-# ---------- Chat history ----------
-@router.get("/history")
-def history(authorization: str | None = Header(default=None)):
-    student_id = current(authorization, "student")
-    return list(get_db().messages.find({"student_id": student_id}, {"_id": 0, "student_id": 0})
-                .sort("created_at", 1).limit(200))
+# ---------- Session check (keeps the user logged in after a page refresh) ----------
+@router.get("/auth/session")
+def session(authorization: str | None = Header(default=None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Please log in")
+    try:
+        role, subject = auth.verify_token(authorization.removeprefix("Bearer ").strip())
+    except auth.AuthError as e:
+        _fail(e, 401)
+    return {"role": role, "subject": subject}
 
 
-@router.delete("/history")
-def clear_history(authorization: str | None = Header(default=None)):
+# ---------- Conversations (chat history) ----------
+def new_conversation(student_id: str, title: str) -> str:
+    conversation_id = uuid.uuid4().hex[:12]
+    now = datetime.now(timezone.utc)
+    get_db().conversations.insert_one({"conversation_id": conversation_id, "student_id": student_id,
+                                       "title": title[:60], "created_at": now, "updated_at": now})
+    return conversation_id
+
+
+def save_exchange(student_id: str, conversation_id: str | None, question: str, response: dict) -> str:
+    """Store the question and the answer; start a new conversation if needed. Returns its id."""
+    db_ = get_db()
+    if not conversation_id or not db_.conversations.find_one({"conversation_id": conversation_id, "student_id": student_id}):
+        conversation_id = new_conversation(student_id, question)
+    now = datetime.now(timezone.utc)
+    db_.messages.insert_many([
+        {"conversation_id": conversation_id, "student_id": student_id, "role": "user", "text": question, "created_at": now},
+        {"conversation_id": conversation_id, "student_id": student_id, "role": "assistant", "text": response["answer"],
+         "response": response, "created_at": now},
+    ])
+    db_.conversations.update_one({"conversation_id": conversation_id}, {"$set": {"updated_at": now}})
+    return conversation_id
+
+
+@router.get("/conversations")
+def list_conversations(authorization: str | None = Header(default=None)):
     student_id = current(authorization, "student")
-    get_db().messages.delete_many({"student_id": student_id})
-    return {"message": "Chat cleared"}
+    return list(get_db().conversations.find({"student_id": student_id}, {"_id": 0, "student_id": 0})
+                .sort("updated_at", -1).limit(50))
+
+
+@router.get("/conversations/{conversation_id}")
+def get_conversation(conversation_id: str, authorization: str | None = Header(default=None)):
+    student_id = current(authorization, "student")
+    return list(get_db().messages.find({"conversation_id": conversation_id, "student_id": student_id},
+                                       {"_id": 0, "student_id": 0}).sort("created_at", 1))
+
+
+@router.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str, authorization: str | None = Header(default=None)):
+    student_id = current(authorization, "student")
+    get_db().conversations.delete_one({"conversation_id": conversation_id, "student_id": student_id})
+    get_db().messages.delete_many({"conversation_id": conversation_id, "student_id": student_id})
+    return {"message": "Chat deleted"}

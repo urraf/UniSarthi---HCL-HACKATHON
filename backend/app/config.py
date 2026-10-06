@@ -24,12 +24,14 @@ CHROMA_DIR = Path(os.getenv("CHROMA_DIR", DATA_DIR / "chroma"))
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()  # groq | ollama | mock
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+# Used in order when a model hits its daily token limit (each Groq model has its own quota)
+GROQ_FALLBACK_MODELS = [m.strip() for m in os.getenv("GROQ_FALLBACK_MODELS", "").split(",") if m.strip()]
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 
 # ---------- Retrieval ----------
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-TOP_K = int(os.getenv("TOP_K", "5"))
+TOP_K = int(os.getenv("TOP_K", "4"))
 MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.50"))
 
 # ---------- Authentication ----------

@@ -12,6 +12,7 @@ AnswerType = Literal["retrieved_fact", "calculated", "not_found", "clarification
 class AskRequest(BaseModel):
     question: str = Field(min_length=2, max_length=1000)
     as_of_date: str | None = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$", description="YYYY-MM-DD, defaults to today")
+    conversation_id: str | None = Field(default=None, description="optional: chat to save this exchange in (logged-in students)")
 
 
 class Citation(BaseModel):
@@ -47,6 +48,7 @@ class AskResponse(BaseModel):
     conflicts_detected: list[dict]
     explanation: str
     as_of_date: str
+    conversation_id: str | None = None  # set when the exchange was saved to a logged-in student's chat
 
 
 class IngestResponse(BaseModel):

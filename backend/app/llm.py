@@ -47,6 +47,20 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
     else:
         raise LLMError(f"Unknown LLM_PROVIDER: {config.LLM_PROVIDER}")
 
+    models = [model] + (config.GROQ_FALLBACK_MODELS if config.LLM_PROVIDER == "groq" else [])
+    for name in models:
+        try:
+            return _call(url, headers, name, system, user, temperature)
+        except DailyLimit:
+            continue  # this model's daily quota is used up: try the next one
+    raise LLMError("All configured models have reached their daily token limit")
+
+
+class DailyLimit(Exception):
+    """The model's tokens-per-day quota is used up (waiting a few seconds will not help)."""
+
+
+def _call(url: str, headers: dict, model: str, system: str, user: str, temperature: float) -> tuple[dict, dict]:
     body = {
         "model": model,
         "temperature": temperature,
@@ -63,8 +77,10 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
         start = time.time()
         try:
             resp = requests.post(url, json=body, headers=headers, timeout=120)
+            if resp.status_code == 429 and "per day" in resp.text:
+                raise DailyLimit(model)
             if resp.status_code == 429:
-                # Rate limited (free tiers): wait as long as the server asks (max 30 s), then retry
+                # Rate limited per minute (free tiers): wait as long as the server asks (max 30 s), then retry
                 last_error = "rate limited (429)"
                 time.sleep(min(float(resp.headers.get("retry-after", 2)), 30))
                 continue

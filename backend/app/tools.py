@@ -17,6 +17,14 @@ def get_student_profile(student_id: str) -> dict | None:
     return db.query_one("SELECT * FROM students WHERE student_id = ?", (student_id,))
 
 
+def get_courses(student_id: str) -> list[dict]:
+    """The student's courses (any course with attendance or a result), with programme and semester."""
+    return db.query(
+        "SELECT course_code, course_name, semester, credits FROM courses WHERE course_code IN "
+        "(SELECT course_code FROM attendance WHERE student_id = ? UNION SELECT course_code FROM results WHERE student_id = ?) "
+        "ORDER BY semester, course_code", (student_id, student_id))
+
+
 def get_attendance(student_id: str, course_code: str) -> dict:
     row = db.query_one(
         "SELECT a.course_code, c.course_name, a.classes_held, a.classes_attended "

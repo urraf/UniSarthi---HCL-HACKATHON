@@ -10,6 +10,7 @@ from typing import TypedDict
 # Rule of thumb: "what IS the rule?" -> policy;  "what is MY situation?" -> a personal intent.
 INTENTS = {
     "policy": "general question about university rules, procedures (e.g. how to apply), fees or documents; not about the student's own records",
+    "my_courses": "which courses / subjects the student is registered in or has records for",
     "my_attendance": "the student's own attendance in a course",
     "my_results": "the student's own marks or results",
     "exam_eligibility": "can the student appear in the end-semester exam of a course",
@@ -19,7 +20,7 @@ INTENTS = {
     "small_talk": "ONLY greetings, thanks, 'who are you' or 'what can you do'. Any real question, even off-topic, is policy",
 }
 # Intents that need the logged-in student's own records
-PERSONAL_INTENTS = {"my_attendance", "my_results", "exam_eligibility", "supplementary_eligibility",
+PERSONAL_INTENTS = {"my_courses", "my_attendance", "my_results", "exam_eligibility", "supplementary_eligibility",
                     "placement_eligibility", "placement_whatif"}
 # Intents that need to know which course
 COURSE_INTENTS = {"my_attendance", "exam_eligibility", "supplementary_eligibility", "placement_whatif"}

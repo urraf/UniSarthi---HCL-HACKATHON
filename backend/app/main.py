@@ -19,15 +19,12 @@ from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
-from datetime import datetime, timezone
-
 from app import auth, config, db, vectors
-from app.account_routes import current, router as account_router
+from app.account_routes import current, router as account_router, save_exchange
 from app.ingest import DocumentMeta, ingest_document
 from app.llm import LLMError, chat_json
 from app.pipeline.graph import run
 from app.pipeline.understand import student_courses
-from app.mongo import get_db
 from app.schemas import AskRequest, AskResponse, IngestResponse
 
 app = FastAPI(title="UniSarthi - Student Services Assistant", version="1.0")
@@ -73,12 +70,8 @@ def ask(body: AskRequest, x_student_id: str | None = Header(default=None),
         authorization: str | None = Header(default=None)):
     student_id, logged_in = identify(x_student_id, authorization)
     response = run(body.question, student_id, body.as_of_date)
-    if logged_in:  # keep the chat history of logged-in students (MongoDB)
-        now = datetime.now(timezone.utc)
-        get_db().messages.insert_many([
-            {"student_id": student_id, "role": "user", "text": body.question, "created_at": now},
-            {"student_id": student_id, "role": "assistant", "text": response["answer"], "response": response, "created_at": now},
-        ])
+    if logged_in:  # keep the chat of logged-in students (MongoDB)
+        response["conversation_id"] = save_exchange(student_id, body.conversation_id, body.question, response)
     return response
 
 

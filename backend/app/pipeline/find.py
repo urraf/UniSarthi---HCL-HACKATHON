@@ -7,7 +7,8 @@ Step 3 - Find the evidence (no LLM).
 3. Drop chunks whose clause was superseded by a level 1-2 document (precedence step 2).
 4. Keep the most relevant chunks, then order them: higher authority first, then newer (steps 3-4).
 5. Resolve the rules the question is about (rule registry + precedence policy).
-6. Nothing relevant enough found for a policy question -> not_found (R3).
+6. Nothing in force? Use matching EXPIRED documents, clearly labelled as no longer in force.
+7. Nothing relevant at all for a policy question -> not_found (R3).
 """
 from app import config, db, tools, vectors
 from app.precedence import clause_ref, covers, is_effective
@@ -36,6 +37,16 @@ def find(state: State) -> dict:
     evidence.sort(key=lambda h: (h["authority_level"], _neg_date(h["effective_from"]), -h["similarity"]))
     for i, e in enumerate(evidence, start=1):
         e["evidence_id"] = f"E{i}"
+
+    # Nothing in force, but an EXPIRED document matches (e.g. the 2024-25 placement policy):
+    # use it as clearly-labelled background so the student hears what the last rule said and that it expired.
+    if not evidence:
+        expired = [h for h in hits if h.get("effective_to") and h["effective_to"] < as_of and covers(h, student)]
+        evidence = sorted(expired, key=lambda h: -h["similarity"])[: config.TOP_K]
+        for e in evidence:
+            e["expired"] = True
+        for i, e in enumerate(evidence, start=1):
+            e["evidence_id"] = f"E{i}"
 
     rules = [tools.get_rule(p, student, as_of) for p in state.get("rule_parameters", [])]
 

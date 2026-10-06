@@ -17,6 +17,9 @@ from app import config
 from app.llm import LLMError, chat_json
 from app.pipeline.state import State
 
+# Each evidence block is trimmed to keep prompts small (Groq free tier: 8,000 tokens/minute)
+EVIDENCE_CHARS = 700
+
 SYSTEM = """You are a university student-services assistant.
 Rules you must follow:
 1. Use ONLY the evidence blocks, rule decisions and tool results given to you. No outside knowledge.
@@ -31,6 +34,8 @@ Rules you must follow:
 7. If the evidence answers only PART of the question, set "found" to true, answer the part that is known,
    and say clearly what the documents do not cover.
 8. Only if the evidence says nothing useful about the question, set "found" to false.
+9. Evidence with EXPIRED_ON is no longer in force. Start by saying the latest document on this topic expired
+   on that date and no newer one is available, then summarise what it said, as past information only.
 Reply with JSON only."""
 
 
@@ -71,7 +76,8 @@ def answer(state: State) -> dict:
 def build_prompt(state: State) -> str:
     blocks = "\n".join(
         f'<evidence id="{e["evidence_id"]}" doc="{e["doc_id"]}" title="{e["title"]}" section="{e["section"]}" '
-        f'authority="{e["authority_level"]}" effective_from="{e["effective_from"]}">\n{e["text"]}\n</evidence>'
+        f'authority="{e["authority_level"]}" effective_from="{e["effective_from"]}"'
+        f'{f" EXPIRED_ON=" + chr(34) + e["effective_to"] + chr(34) if e.get("expired") else ""}>\n{e["text"][:EVIDENCE_CHARS]}\n</evidence>'
         for e in state.get("evidence", [])
     ) or "(no evidence found)"
     decisions = [{"parameter": r["parameter"], "applies": f"{r['operator']} {r['value']}" if r["value"] else None,
@@ -139,7 +145,9 @@ def template_answer(state: State) -> dict:
         return {"found": True, "answer": text, "explanation": "Computed by the tools from your records.", "used_evidence": []}
     evidence = state.get("evidence", [])
     if evidence:
-        top = evidence[0]
-        return {"found": True, "answer": top["text"][:400], "used_evidence": [top["evidence_id"]],
-                "explanation": f"Quoted from {top['doc_id']} section {top['section']}."}
+        top = max(evidence, key=lambda e: e["similarity"])  # the closest passage, quoted as it is
+        return {"found": True, "used_evidence": [top["evidence_id"]],
+                "answer": f"The assistant is busy, so here is the most relevant passage from {top['title']}: "
+                          f"\"{' '.join(top['text'].split())[:350]}...\"",
+                "explanation": f"Quoted from {top['doc_id']} (page {top.get('page')}); no summary could be generated right now."}
     return {"found": False}

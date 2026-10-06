@@ -6,7 +6,8 @@ Collections:
   users     {student_id, roll_number, email, salt, password_hash, created_at}
   admins    {admin_id, salt, password_hash, created_at}           university staff who add documents
   otps      {email, purpose, code_hash, student_id, attempts, expires_at}   auto-deleted when expired
-  messages  {student_id, role, text, response, created_at}        chat history
+  conversations {conversation_id, student_id, title, created_at, updated_at}   one per chat
+  messages  {conversation_id, student_id, role, text, response, created_at}    chat history
 """
 from pymongo import ASCENDING, MongoClient
 
@@ -35,5 +36,7 @@ def get_db():
     _db.admins.create_index("admin_id", unique=True)
     _db.otps.create_index("expires_at", expireAfterSeconds=0)  # MongoDB deletes expired OTPs itself
     _db.otps.create_index([("email", ASCENDING), ("purpose", ASCENDING)])
-    _db.messages.create_index([("student_id", ASCENDING), ("created_at", ASCENDING)])
+    _db.messages.create_index([("conversation_id", ASCENDING), ("created_at", ASCENDING)])
+    _db.conversations.create_index([("student_id", ASCENDING), ("updated_at", ASCENDING)])
+    _db.conversations.create_index("conversation_id", unique=True)
     return _db

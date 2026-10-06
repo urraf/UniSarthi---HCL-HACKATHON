@@ -38,16 +38,20 @@ export const resetPassword = (email, otp, newPassword) =>
   post("/auth/reset-password", { email, otp, new_password: newPassword });
 export const forgotRoll = (email) => post("/auth/forgot-roll", { email });
 
-// ---- Chat history ----
-export const getHistory = (session) => fetch(`${API_URL}/history`, { headers: authHeaders(session) }).then(handle);
-export const clearHistory = (session) =>
-  fetch(`${API_URL}/history`, { method: "DELETE", headers: authHeaders(session) }).then(handle);
+// ---- Session + saved chats ----
+const get = (path, session) => fetch(`${API_URL}${path}`, { headers: authHeaders(session) }).then(handle);
+export const checkSession = (session) => get("/auth/session", session);
+export const listChats = (session) => get("/conversations", session);
+export const getChat = (session, id) => get(`/conversations/${id}`, session);
+export const deleteChat = (session, id) =>
+  fetch(`${API_URL}/conversations/${id}`, { method: "DELETE", headers: authHeaders(session) }).then(handle);
 
-export function ask(session, question, asOfDate) {
+// conversationId: the chat this question belongs to (null = start a new chat)
+export function ask(session, question, conversationId) {
   return fetch(`${API_URL}/ask`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders(session) },
-    body: JSON.stringify({ question, as_of_date: asOfDate || null }),
+    body: JSON.stringify({ question, conversation_id: conversationId || null }),
   }).then(handle);
 }
 

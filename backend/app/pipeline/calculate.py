@@ -14,6 +14,7 @@ from app.pipeline.state import State
 
 # intent -> list of (tool name, which arguments it needs)
 PLANS = {
+    "my_courses": [("get_courses", [])],
     "my_attendance": [("get_attendance", ["course_code"])],
     "my_results": [("get_results", ["course_code"])],
     "exam_eligibility": [("get_attendance", ["course_code"]),
@@ -29,6 +30,7 @@ PLANS = {
 
 TOOLS = {
     "get_student_profile": tools.get_student_profile,
+    "get_courses": tools.get_courses,
     "get_attendance": tools.get_attendance,
     "get_results": tools.get_results,
     "check_exam_eligibility": tools.check_exam_eligibility,

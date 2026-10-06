@@ -1,19 +1,61 @@
 // Main screen. Not logged in -> AuthScreen.
-// Students see only the chat. University staff see "Add document" and "Sources".
-import { useState } from "react";
+// Students see the chat. University staff see "Add document" and "Sources".
+// The login is kept in the browser (localStorage) so a page refresh does not log you out;
+// on load it is checked with the server (GET /auth/session).
+import { useEffect, useState } from "react";
+import { checkSession } from "./api.js";
 import AuthScreen from "./components/AuthScreen.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import IngestPanel from "./components/IngestPanel.jsx";
 import SourcesPanel from "./components/SourcesPanel.jsx";
 
 const STAFF_TABS = ["Add document", "Sources"];
+const STORAGE_KEY = "unisarthi_session";
+
+function loadSaved() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
 
 export default function App() {
   // session = login response: { token, role: "student" | "admin", ... }
   const [session, setSession] = useState(null);
+  const [checking, setChecking] = useState(true);
   const [tab, setTab] = useState(STAFF_TABS[0]);
 
-  if (!session) return <AuthScreen onLogin={setSession} />;
+  // On page load: restore the saved login if the server still accepts its token
+  useEffect(() => {
+    const saved = loadSaved();
+    if (!saved) return setChecking(false);
+    checkSession(saved)
+      .then(() => setSession(saved))
+      .catch(() => logout())
+      .finally(() => setChecking(false));
+  }, []);
+
+  function login(newSession) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
+    } catch {
+      /* storage blocked: the login just won't survive a refresh */
+    }
+    setSession(newSession);
+  }
+
+  function logout() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+    setSession(null);
+  }
+
+  if (checking) return <div className="login-wrap"><p className="muted">Loading...</p></div>;
+  if (!session) return <AuthScreen onLogin={login} />;
   const isStaff = session.role === "admin";
 
   return (
@@ -28,7 +70,7 @@ export default function App() {
           {!isStaff && (
             <span className="muted">{session.roll_number} · {session.programme} · batch {session.batch_year}</span>
           )}
-          <button className="link" onClick={() => setSession(null)}>Log out</button>
+          <button className="link" onClick={logout}>Log out</button>
         </div>
       </header>
 
