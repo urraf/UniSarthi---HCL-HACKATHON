@@ -52,3 +52,10 @@ def test_what_if_passing_the_supplementary_clears_the_backlog():
     what_if = tools.check_placement_eligibility("S0002", TODAY, assume_cleared=["TC202"])
     assert what_if["result"] == "ELIGIBLE"
     assert what_if["assumptions"]
+
+
+def test_what_if_cannot_clear_a_detained_course():
+    # S0003 is DETAINED in TC201: no supplementary allowed, so the backlog stays
+    what_if = tools.check_placement_eligibility("S0003", TODAY, assume_cleared=["TC201"])
+    assert what_if["active_backlogs_used"] == 1
+    assert what_if["result"] == "NOT_ELIGIBLE"

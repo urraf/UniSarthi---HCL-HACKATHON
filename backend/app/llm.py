@@ -64,9 +64,9 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
         try:
             resp = requests.post(url, json=body, headers=headers, timeout=120)
             if resp.status_code == 429:
-                # Rate limited (free tiers): wait as long as the server asks (max 10 s), then retry
+                # Rate limited (free tiers): wait as long as the server asks (max 30 s), then retry
                 last_error = "rate limited (429)"
-                time.sleep(min(float(resp.headers.get("retry-after", 2)), 10))
+                time.sleep(min(float(resp.headers.get("retry-after", 2)), 30))
                 continue
             resp.raise_for_status()
         except requests.RequestException as e:

@@ -1,0 +1,27 @@
+# docker compose up --build
+#   API  -> http://localhost:8000  (docs at /docs)
+#   UI   -> http://localhost:5173
+# Settings and secrets come from backend/.env (copy .env.example first).
+# Ollama (if LLM_PROVIDER=ollama) runs on the host machine, reached via host.docker.internal.
+services:
+  api:
+    build: ./backend
+    env_file: ./backend/.env
+    environment:
+      OLLAMA_URL: http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8000:8000"
+    volumes:
+      # SQLite + ChromaDB + documents live here, so they survive restarts (no re-ingest)
+      - ./backend/data:/app/data
+
+  ui:
+    build: ./frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api

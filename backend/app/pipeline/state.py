@@ -7,6 +7,7 @@ If a step sets stop=True, the graph jumps straight to the finalize step.
 from typing import TypedDict
 
 # What the assistant can do. The LLM must pick one of these for every question.
+# Rule of thumb: "what IS the rule?" -> policy;  "what is MY situation?" -> a personal intent.
 INTENTS = {
     "policy": "general question about university rules, procedures (e.g. how to apply), fees or documents; not about the student's own records",
     "my_attendance": "the student's own attendance in a course",

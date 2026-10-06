@@ -1,0 +1,60 @@
+{
+  "trace_id": "0a0d07be",
+  "timestamp": "2026-10-06T08:31:23+00:00",
+  "student_id": null,
+  "question": "What minimum CGPA is needed to register for campus placements?",
+  "question_category": "policy",
+  "as_of_date": "2027-01-10",
+  "sources_retrieved": [
+    {
+      "doc_id": "PLACE-2026-11",
+      "section": "1",
+      "score": 0.885
+    },
+    {
+      "doc_id": "PLACE-2026-11",
+      "section": "",
+      "score": 0.764
+    },
+    {
+      "doc_id": "PLACE-POL-2025",
+      "section": "3",
+      "score": 0.754
+    },
+    {
+      "doc_id": "PLACE-POL-2025",
+      "section": "1",
+      "score": 0.727
+    },
+    {
+      "doc_id": "PLACE-POL-2025",
+      "section": "4",
+      "score": 0.724
+    }
+  ],
+  "precedence_decision": "PLC-CGPA-02 applies; PLC-CGPA-01 superseded by PLACE-2026-11 (step 2: supersession)",
+  "tools_invoked": [],
+  "rules_applied": [
+    {
+      "rule_id": "PLC-CGPA-02",
+      "parameter": "placement_min_cgpa",
+      "value": ">=7.0",
+      "source_doc_id": "PLACE-2026-11",
+      "source_section": "1"
+    }
+  ],
+  "conflicts_detected": [
+    {
+      "parameter": "placement_min_cgpa",
+      "winner": "PLC-CGPA-02",
+      "overridden": "PLC-CGPA-01",
+      "reason": "superseded by PLACE-2026-11 (step 2: supersession)"
+    }
+  ],
+  "answer_type": "retrieved_fact",
+  "model": "groq:qwen/qwen3.8-27b",
+  "llm_calls": 2,
+  "llm_fallback_used": false,
+  "tokens": 1522,
+  "latency_ms": 10932
+}

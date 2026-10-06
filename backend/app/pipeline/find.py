@@ -5,7 +5,7 @@ Step 3 - Find the evidence (no LLM).
 2. Keep only chunks in force on as_of_date and in scope for this student (precedence step 1).
    Not-yet-effective documents are kept aside as "upcoming".
 3. Drop chunks whose clause was superseded by a level 1-2 document (precedence step 2).
-4. Rank the rest: higher authority first, then newer, then closer match (steps 3-4).
+4. Keep the most relevant chunks, then order them: higher authority first, then newer (steps 3-4).
 5. Resolve the rules the question is about (rule registry + precedence policy).
 6. Nothing relevant enough found for a policy question -> not_found (R3).
 """
@@ -26,8 +26,9 @@ def find(state: State) -> dict:
     replaced = superseded_refs(student, as_of)
     live = [h for h in live if h["doc_id"] not in replaced and clause_ref(h) not in replaced]
 
-    live.sort(key=lambda h: (h["authority_level"], _neg_date(h["effective_from"]), -h["similarity"]))
-    evidence = live[: config.TOP_K]
+    # Keep the TOP_K most relevant chunks, THEN order them by precedence for the LLM
+    evidence = sorted(live, key=lambda h: -h["similarity"])[: config.TOP_K]
+    evidence.sort(key=lambda h: (h["authority_level"], _neg_date(h["effective_from"]), -h["similarity"]))
     for i, e in enumerate(evidence, start=1):
         e["evidence_id"] = f"E{i}"
 

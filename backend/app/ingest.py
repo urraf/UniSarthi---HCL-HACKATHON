@@ -6,7 +6,7 @@ Steps:
   2. Read the file: PDF page by page (pypdf), or .md / .txt as one page.
   3. Split each page into sections using numbered headings ("7.2 ...", "Q3 ...").
      Each chunk remembers its page and section, so citations are exact.
-  4. Remove instruction-like text (documents are data, not instructions - R8).
+  4. Remove instruction-like lines (documents are data, not instructions - R8).
   5. Store chunks in ChromaDB and the document row in SQLite.
   6. (Live documents only) Ask the LLM which known rule parameters the document sets,
      and keep a rule only if its value appears word for word in the cited section.
@@ -101,14 +101,10 @@ INSTRUCTION_LIKE = re.compile(
 
 
 def remove_instructions(text: str) -> str:
-    """Replace sentences that try to give the assistant orders. The rest of the text (and its lines) is kept."""
-    clean_lines = []
-    for line in text.splitlines():
-        if INSTRUCTION_LIKE.search(line):
-            sentences = re.split(r"(?<=[.!?])\s+", line)
-            line = " ".join("[instruction-like text removed]" if INSTRUCTION_LIKE.search(s) else s for s in sentences)
-        clean_lines.append(line)
-    return "\n".join(clean_lines)
+    """Replace any line that tries to give the assistant orders (the whole line, since the
+    rest of an injected paragraph is usually part of the attack). Other lines are kept."""
+    return "\n".join("[instruction-like text removed]" if INSTRUCTION_LIKE.search(line) else line
+                     for line in text.splitlines())
 
 
 # ---------- 5. Store ----------

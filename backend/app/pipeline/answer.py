@@ -25,7 +25,8 @@ Rules you must follow:
 3. Never calculate or change numbers yourself. Use the tool results exactly as given.
 4. Rule decisions come from the official precedence policy: follow them.
    If a lower-ranked source disagrees, say which source applies and why.
-5. Evidence marked authority="5" is unofficial: you may mention it but it never decides anything.
+5. Evidence marked authority="5" is unofficial: it never decides anything. If you mention it, say it is
+   unofficial and give the official rule instead.
 6. Mention upcoming changes (documents not yet in force) when relevant, and state any assumptions.
 7. If the evidence does not answer the question, set "found" to false.
 Reply with JSON only."""

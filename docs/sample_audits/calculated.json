@@ -1,0 +1,129 @@
+{
+  "trace_id": "5ebebcae",
+  "timestamp": "2026-10-06T08:33:38+00:00",
+  "student_id": "S1025",
+  "question": "If I pass Basic Electronics in the supplementary, will I be eligible for placement?",
+  "question_category": "placement_whatif",
+  "as_of_date": "2026-10-06",
+  "sources_retrieved": [
+    {
+      "doc_id": "ACAD-REG-2024",
+      "section": "10.2",
+      "score": 0.709
+    },
+    {
+      "doc_id": "ACAD-REG-2024",
+      "section": "10",
+      "score": 0.695
+    },
+    {
+      "doc_id": "ACAD-REG-2024",
+      "section": "10.4",
+      "score": 0.684
+    },
+    {
+      "doc_id": "PLACE-POL-2025",
+      "section": "3",
+      "score": 0.697
+    },
+    {
+      "doc_id": "PLACE-POL-2025",
+      "section": "4",
+      "score": 0.693
+    }
+  ],
+  "precedence_decision": "PLC-CGPA-01 applies (no conflict); PLC-BKL-01 applies (no conflict); SUPP-01 applies (no conflict)",
+  "tools_invoked": [
+    {
+      "tool": "get_results",
+      "input": {
+        "course_code": "EC101"
+      },
+      "output": [
+        {
+          "course_code": "EC101",
+          "course_name": "Basic Electronics",
+          "exam_session": "2026-MAY",
+          "exam_type": "REGULAR",
+          "internal_marks": 0,
+          "external_marks": 0,
+          "total_marks": 0,
+          "max_marks": 100,
+          "result": "DETAINED"
+        }
+      ],
+      "status": "ok",
+      "ms": 0
+    },
+    {
+      "tool": "check_supplementary_eligibility",
+      "input": {
+        "course_code": "EC101",
+        "as_of": "2026-10-06"
+      },
+      "output": {
+        "result": "NOT_ELIGIBLE",
+        "course_code": "EC101",
+        "latest_result": "DETAINED",
+        "allowed_results": "FAIL;ABSENT"
+      },
+      "status": "ok",
+      "ms": 0
+    },
+    {
+      "tool": "check_placement_eligibility",
+      "input": {
+        "as_of": "2026-10-06",
+        "assume_cleared": [
+          "EC101"
+        ]
+      },
+      "output": {
+        "result": "NOT_ELIGIBLE",
+        "cgpa": 8.25,
+        "cgpa_required": ">= 6.5",
+        "cgpa_ok": true,
+        "active_backlogs_now": 1,
+        "active_backlogs_used": 1,
+        "backlogs_allowed": "<= 0",
+        "backlogs_ok": false,
+        "assumptions": [
+          "EC101 cannot be cleared by a supplementary exam (result DETAINED is not allowed), so the backlog stays",
+          "Assumes your CGPA stays the same (the new grade is not known yet)"
+        ]
+      },
+      "status": "ok",
+      "ms": 0
+    }
+  ],
+  "rules_applied": [
+    {
+      "rule_id": "PLC-CGPA-01",
+      "parameter": "placement_min_cgpa",
+      "value": ">=6.5",
+      "source_doc_id": "PLACE-POL-2025",
+      "source_section": "3.1"
+    },
+    {
+      "rule_id": "PLC-BKL-01",
+      "parameter": "placement_max_backlogs",
+      "value": "<=0",
+      "source_doc_id": "PLACE-POL-2025",
+      "source_section": "3.2"
+    },
+    {
+      "rule_id": "SUPP-01",
+      "parameter": "supplementary_allowed_results",
+      "value": "inFAIL;ABSENT",
+      "source_doc_id": "ACAD-REG-2024",
+      "source_section": "10.2"
+    }
+  ],
+  "conflicts_detected": [],
+  "answer_type": "calculated",
+  "model": "groq:qwen/qwen3.8-27b",
+  "llm_calls": 2,
+  "llm_fallback_used": false,
+  "tokens": 2200,
+  "latency_ms": 16295
+}

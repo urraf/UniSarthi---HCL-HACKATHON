@@ -143,10 +143,14 @@ def check_placement_eligibility(student_id: str, as_of: str, assume_cleared: lis
     backlogs = student["active_backlogs"]
     assumptions = []
     for code in assume_cleared or []:
-        latest = get_results(student_id, code)
-        if latest and latest[0]["result"] != "PASS":
+        # A course can only be cleared by a supplementary exam if the student is allowed to take it
+        supp = check_supplementary_eligibility(student_id, code, as_of)
+        if supp.get("result") == "ELIGIBLE":
             backlogs -= 1
-            assumptions.append(f"Assumes you pass {code}, reducing active backlogs by 1")
+            assumptions.append(f"Assumes you pass {code} in the supplementary exam, reducing active backlogs by 1")
+        elif supp.get("result") == "NOT_ELIGIBLE":
+            assumptions.append(f"{code} cannot be cleared by a supplementary exam (result {supp['latest_result']} "
+                               f"is not allowed), so the backlog stays")
     if assumptions:
         assumptions.append("Assumes your CGPA stays the same (the new grade is not known yet)")
 
