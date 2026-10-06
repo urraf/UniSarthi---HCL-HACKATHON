@@ -1,0 +1,9 @@
+course_code,course_name,programme,semester,credits
+CS101,Programming in C,B.Tech CSE,2,4
+MA101,Engineering Mathematics II,B.Tech CSE,2,4
+CS201,Data Structures,B.Tech CSE,4,4
+CS202,Database Management Systems,B.Tech CSE,4,4
+EC101,Basic Electronics,B.Tech ECE,2,4
+MA102,Engineering Mathematics II,B.Tech ECE,2,4
+EC201,Signals and Systems,B.Tech ECE,4,4
+EC202,Digital Electronics,B.Tech ECE,4,4

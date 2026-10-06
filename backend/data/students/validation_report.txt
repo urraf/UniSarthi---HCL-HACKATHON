@@ -1,0 +1,10 @@
+Edge cases:
+OK      attendance exactly at a threshold: S1001 CS201, S1001 CS202, S1002 CS202, S1007 CS201, S1007 CS202, S1009 CS101, S1010 MA101, S1017 EC201
+OK      attendance one class below a threshold: S1002 CS201
+OK      failed with marks just below pass: S1026 MA102
+OK      absent result: S1004 CS201, S1019 EC202
+OK      detained student: S1005 CS201, S1005 CS202, S1025 EC101
+OK      multiple backlogs: S1005, S1010
+OK      CGPA exactly at placement cut-off: S1005, S1007, S1018
+
+Violations: 0

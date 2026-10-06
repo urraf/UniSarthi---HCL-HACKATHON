@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Secrets (never commit real keys)
+.env
+
+# Generated at runtime (rebuilt by scripts/seed.py)
+backend/data/unisarthi.db
+backend/data/chroma/
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

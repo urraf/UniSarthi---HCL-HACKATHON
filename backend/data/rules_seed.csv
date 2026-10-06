@@ -1,0 +1,9 @@
+rule_id,description,parameter,operator,value,scope_programmes,scope_batches,effective_from,effective_to,source_doc_id,source_section
+ATT-MIN-01,Minimum attendance in each course to appear in the end-semester exam,min_attendance_pct,>=,75,ALL,ALL,2024-07-01,,ACAD-REG-2024,7.2
+ATT-MIN-02,Minimum attendance in each course to appear in the end-semester exam (revised),min_attendance_pct,>=,80,ALL,ALL,2026-08-01,,ACAD-2026-08,1
+ATT-MIN-03,Help-desk FAQ answer about minimum attendance,min_attendance_pct,>=,65,ALL,ALL,2026-09-15,,FAQ-2026,Q3
+PASS-01,Minimum total marks (percent of maximum) to pass a course,pass_marks_pct,>=,40,ALL,ALL,2024-07-01,,ACAD-REG-2024,9.2
+SUPP-01,Results that allow a student to take the supplementary exam,supplementary_allowed_results,in,FAIL;ABSENT,ALL,ALL,2024-07-01,,ACAD-REG-2024,10.2
+PLC-CGPA-01,Minimum CGPA to register for campus placements,placement_min_cgpa,>=,6.5,ALL,ALL,2025-07-01,,PLACE-POL-2025,3.1
+PLC-BKL-01,Maximum active backlogs allowed to register for campus placements,placement_max_backlogs,<=,0,ALL,ALL,2025-07-01,,PLACE-POL-2025,3.2
+PLC-CGPA-02,Minimum CGPA to register for campus placements (revised),placement_min_cgpa,>=,7.0,ALL,2024+,2026-12-01,,PLACE-2026-11,1

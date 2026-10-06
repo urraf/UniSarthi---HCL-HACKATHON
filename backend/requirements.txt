@@ -1,0 +1,20 @@
+# Web API
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+
+# Orchestration (the 5-step pipeline)
+langgraph==0.2.62
+
+# Documents: vector store, embeddings, PDF reading
+chromadb==0.6.3
+sentence-transformers==3.3.1
+pypdf==5.1.0
+
+# LLM calls (Groq / Ollama both speak the OpenAI-style HTTP API)
+requests==2.32.3
+python-dotenv==1.0.1
+
+# Tests
+pytest==8.3.4
