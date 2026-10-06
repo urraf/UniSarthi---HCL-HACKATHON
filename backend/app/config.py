@@ -13,6 +13,9 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+# Avoid a harmless but noisy crash message from the tokenizer threads when Python exits
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = Path(os.getenv("DB_PATH", DATA_DIR / "unisarthi.db"))
 CHROMA_DIR = Path(os.getenv("CHROMA_DIR", DATA_DIR / "chroma"))
@@ -20,14 +23,14 @@ CHROMA_DIR = Path(os.getenv("CHROMA_DIR", DATA_DIR / "chroma"))
 # ---------- LLM ----------
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()  # groq | ollama | mock
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 
 # ---------- Retrieval ----------
 EMBED_MODEL = os.getenv("EMBED_MODEL", "BAAI/bge-small-en-v1.5")
 TOP_K = int(os.getenv("TOP_K", "5"))
-MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.55"))
+MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.60"))
 
 # ---------- Authentication ----------
 SECRET_KEY = os.getenv("SECRET_KEY", "")

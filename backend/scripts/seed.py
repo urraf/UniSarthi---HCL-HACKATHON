@@ -5,6 +5,7 @@ Build the whole database from the files in data/ (safe to run again).
   2. source register  (data/source_register.csv)  -> documents table
   3. rule registry    (data/rules_seed.csv)       -> rule_registry table
   4. students         (data/students/*.csv)       -> student tables + logins
+  5. documents        (data/docs/*)               -> ChromaDB chunks (skipped if already indexed)
 
 Run:  python scripts/seed.py
 """
@@ -55,6 +56,24 @@ def load_rules() -> int:
     return len(rules)
 
 
+def ingest_registered_documents(docs: list[dict]) -> None:
+    """Put every registered document into ChromaDB, skipping ones already there."""
+    from app import vectors
+    from app.ingest import DocumentMeta, ingest_document
+
+    for d in docs:
+        existing = vectors.count_chunks(d["doc_id"])
+        if existing:
+            db.execute("UPDATE documents SET chunks_indexed = ? WHERE doc_id = ?", (existing, d["doc_id"]))
+            print(f"  {d['doc_id']}: already indexed ({existing} chunks), skipped")
+            continue
+        meta = DocumentMeta(**{k: d[k] for k in DocumentMeta.model_fields})
+        data = (config.DATA_DIR / "docs" / d["file_name"]).read_bytes()
+        # Seed rules are written by hand in rules_seed.csv, so no LLM extraction here
+        result = ingest_document(meta, d["file_name"], data, extract_rules=False)
+        print(f"  {d['doc_id']}: {result['chunks_indexed']} chunks")
+
+
 def main() -> None:
     db.init_db()
     docs = load_source_register()
@@ -62,6 +81,8 @@ def main() -> None:
     print(f"Rules loaded: {load_rules()}")
     print(f"Students loaded: {load_folder(config.DATA_DIR / 'students', our_data=True)}")
     print(f"Logins created: {create_missing_logins()}")
+    print("Indexing documents in ChromaDB (first run downloads the embedding model):")
+    ingest_registered_documents(docs)
 
 
 if __name__ == "__main__":
