@@ -1,0 +1,174 @@
+"""
+Account endpoints: sign up with email OTP, login, forgot password, forgot roll number,
+staff login, and chat history. Data lives in MongoDB (see mongo.py).
+
+  POST /auth/signup/start      {roll_number, email}             -> emails an OTP
+  POST /auth/signup/verify     {email, otp, password}           -> creates the account
+  POST /login                  {roll_number, password}          -> student token
+  POST /auth/forgot-password   {email}                          -> emails an OTP
+  POST /auth/reset-password    {email, otp, new_password}
+  POST /auth/forgot-roll       {email}                          -> emails the roll number
+  POST /admin/login            {admin_id, password}             -> staff token
+  GET  /history  /  DELETE /history                             -> the student's chat
+"""
+from fastapi import APIRouter, Header, HTTPException
+from pydantic import BaseModel
+
+from app import auth, config, db
+from app.mailer import MailError, send_email
+from app.mongo import get_db
+
+router = APIRouter()
+# Same reply whether or not the email has an account, so nobody can probe which emails exist
+GENERIC_SENT = {"message": "If this email has an account, we have sent it a message."}
+
+
+class SignupStart(BaseModel):
+    roll_number: str
+    email: str
+
+
+class SignupVerify(BaseModel):
+    email: str
+    otp: str
+    password: str
+
+
+class Login(BaseModel):
+    roll_number: str
+    password: str
+
+
+class EmailOnly(BaseModel):
+    email: str
+
+
+class ResetPassword(BaseModel):
+    email: str
+    otp: str
+    new_password: str
+
+
+class AdminLogin(BaseModel):
+    admin_id: str
+    password: str
+
+
+def _fail(e: Exception, status: int = 400):
+    raise HTTPException(status_code=status, detail=str(e))
+
+
+def _send_otp(email: str, code: str, action: str) -> None:
+    send_email(email, f"UniSarthi: your code to {action}",
+               f"Your one-time code is {code}.\nIt expires in {config.OTP_MINUTES} minutes. "
+               "If you did not ask for it, ignore this email.")
+
+
+def current(authorization: str | None, role: str) -> str:
+    """Subject of a valid token with the right role (student_id or admin_id)."""
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Please log in")
+    try:
+        token_role, subject = auth.verify_token(authorization.removeprefix("Bearer ").strip())
+    except auth.AuthError as e:
+        _fail(e, 401)
+    if token_role != role:
+        raise HTTPException(status_code=403, detail="Not allowed for this account")
+    return subject
+
+
+# ---------- Sign up ----------
+@router.post("/auth/signup/start")
+def signup_start(body: SignupStart):
+    try:
+        roll, email = auth.normalise_roll(body.roll_number), auth.normalise_email(body.email)
+        student = auth.student_by_roll(roll)
+        if get_db().users.find_one({"$or": [{"student_id": student["student_id"]}, {"email": email}]}):
+            raise auth.AuthError("An account already exists for this roll number or email. Try logging in.")
+        _send_otp(email, auth.create_otp(email, "signup", student["student_id"]), "create your account")
+    except (auth.AuthError, MailError) as e:
+        _fail(e)
+    return {"message": f"We sent a code to {email}."}
+
+
+@router.post("/auth/signup/verify")
+def signup_verify(body: SignupVerify):
+    try:
+        email = auth.normalise_email(body.email)
+        otp = auth.check_otp(email, "signup", body.otp)
+        student = db.query_one("SELECT * FROM students WHERE student_id = ?", (otp["student_id"],))
+        auth.create_student_account(student["student_id"], student["roll_number"], email, body.password)
+    except auth.AuthError as e:
+        _fail(e)
+    return {"message": "Account created. You can log in now."}
+
+
+# ---------- Login ----------
+@router.post("/login")
+def login(body: Login):
+    try:
+        token, s = auth.student_login(body.roll_number, body.password)
+    except auth.AuthError as e:
+        _fail(e, 401)
+    return {"token": token, "role": "student", "student_id": s["student_id"], "roll_number": s["roll_number"],
+            "full_name": s["full_name"], "programme": s["programme"], "batch_year": s["batch_year"]}
+
+
+@router.post("/admin/login")
+def admin_login(body: AdminLogin):
+    try:
+        token = auth.admin_login(body.admin_id.strip(), body.password)
+    except auth.AuthError as e:
+        _fail(e, 401)
+    return {"token": token, "role": "admin", "admin_id": body.admin_id.strip()}
+
+
+# ---------- Forgot password / roll number ----------
+@router.post("/auth/forgot-password")
+def forgot_password(body: EmailOnly):
+    try:
+        email = auth.normalise_email(body.email)
+        if get_db().users.find_one({"email": email}):
+            _send_otp(email, auth.create_otp(email, "reset"), "reset your password")
+    except (auth.AuthError, MailError) as e:
+        _fail(e)
+    return GENERIC_SENT
+
+
+@router.post("/auth/reset-password")
+def reset_password(body: ResetPassword):
+    try:
+        email = auth.normalise_email(body.email)
+        auth.check_otp(email, "reset", body.otp)
+        auth.set_password(email, body.new_password)
+    except auth.AuthError as e:
+        _fail(e)
+    return {"message": "Password changed. You can log in now."}
+
+
+@router.post("/auth/forgot-roll")
+def forgot_roll(body: EmailOnly):
+    try:
+        email = auth.normalise_email(body.email)
+        user = get_db().users.find_one({"email": email})
+        if user:
+            send_email(email, "UniSarthi: your roll number",
+                       f"Your roll number is {user['roll_number']}. Use it to log in to UniSarthi.")
+    except (auth.AuthError, MailError) as e:
+        _fail(e)
+    return GENERIC_SENT
+
+
+# ---------- Chat history ----------
+@router.get("/history")
+def history(authorization: str | None = Header(default=None)):
+    student_id = current(authorization, "student")
+    return list(get_db().messages.find({"student_id": student_id}, {"_id": 0, "student_id": 0})
+                .sort("created_at", 1).limit(200))
+
+
+@router.delete("/history")
+def clear_history(authorization: str | None = Header(default=None)):
+    student_id = current(authorization, "student")
+    get_db().messages.delete_many({"student_id": student_id})
+    return {"message": "Chat cleared"}

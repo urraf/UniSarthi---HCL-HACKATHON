@@ -2,24 +2,36 @@
 // If the assistant asks a follow-up (clarification_needed), the student's short reply
 // is joined to the original question, so "Data Structures" answers "Which course?".
 import { useEffect, useRef, useState } from "react";
-import { ask, getMe } from "../api.js";
+import { ask, clearHistory, getHistory, getMe } from "../api.js";
 import { buildSuggestions } from "../suggestions.js";
 import Message from "./Message.jsx";
 
 export default function ChatPanel({ session }) {
   const firstName = session.full_name.split(" ")[0];
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      text: `Hi ${firstName}! I can answer questions about university rules, and check your own attendance, results and eligibility. Ask me anything.`,
-    },
-  ]);
+  const greeting = {
+    role: "assistant",
+    text: `Hi ${firstName}! I can answer questions about university rules, and check your own attendance, results and eligibility. Ask me anything.`,
+  };
+  const [messages, setMessages] = useState([greeting]);
   const [input, setInput] = useState("");
   const [asOfDate, setAsOfDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState(null); // question waiting for a clarification
   const [suggestions, setSuggestions] = useState([]);
   const bottomRef = useRef(null);
+
+  // Load the saved chat history (MongoDB) after login
+  useEffect(() => {
+    getHistory(session)
+      .then((saved) => setMessages([greeting, ...saved.map((m) => ({ role: m.role, text: m.text, response: m.response }))]))
+      .catch(() => {});
+  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function clearChat() {
+    await clearHistory(session);
+    setMessages([greeting]);
+    setPendingQuestion(null);
+  }
 
   // Suggested questions use the student's own courses (from GET /me)
   useEffect(() => {
@@ -73,6 +85,7 @@ export default function ChatPanel({ session }) {
         <label htmlFor="asof">Answer as of</label>
         <input id="asof" type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} />
         <span className="muted">{asOfDate ? "" : "today"}</span>
+        <button className="link clear" onClick={clearChat} disabled={loading}>Clear chat</button>
       </div>
 
       <div className="messages">

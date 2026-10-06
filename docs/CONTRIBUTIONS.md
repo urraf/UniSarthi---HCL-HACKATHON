@@ -6,10 +6,10 @@ Every member owns the files below, pushes them from their own GitHub account, an
 
 | Files | What it is |
 |---|---|
-| `frontend/` (all) | React chat app: login, chat with typing indicator and follow-up questions, upload document, sources |
+| `frontend/` (all) | React app: login / sign up / forgot password / staff login, student chat with history, staff document upload and sources |
 | `backend/app/main.py` | FastAPI endpoints `/ask /ingest /health /audit /sources /login /me` |
 | `backend/app/schemas.py` | Pydantic request/response models (the API contract) |
-| `backend/app/auth.py`, `backend/scripts/create_logins.py` | Login: salted password hashes, signed tokens |
+| `backend/app/auth.py`, `backend/app/account_routes.py`, `backend/app/mongo.py`, `backend/app/mailer.py`, `backend/scripts/create_logins.py`, `backend/scripts/create_admin.py`, `backend/tests/test_auth.py` | Accounts in MongoDB: roll-number login, sign up / forgot password with email OTP, forgot roll number, staff login, chat history |
 | `backend/app/config.py` | All settings from `.env` |
 | `backend/app/pipeline/guard.py` | Step 1: who is asking, refuse other students' data |
 | `backend/app/pipeline/finalize.py` | Final step: answer_type, citations, audit record |

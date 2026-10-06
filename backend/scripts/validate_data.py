@@ -81,6 +81,11 @@ def validate(folder: Path, our_data: bool = True) -> tuple[list[str], list[str]]
             errors.append(f"{sid}: cgpa out of range")
         if int(s["active_backlogs"]) < 0:
             errors.append(f"{sid}: active_backlogs negative")
+        if "roll_number" in s and not re.fullmatch(r"\d{4}[A-Z]{3}\d{4}", s["roll_number"] or ""):
+            errors.append(f"{sid}: roll_number must look like 2023UIT3015")
+    rolls = [s["roll_number"] for s in students.values() if s.get("roll_number")]
+    if len(rolls) != len(set(rolls)):
+        errors.append("roll_number values must be unique")
 
     for code in courses:
         if our_data and code.startswith("JDG"):

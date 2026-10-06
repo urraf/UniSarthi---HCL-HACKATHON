@@ -56,7 +56,7 @@ npm install && npm run dev                     # http://localhost:5173
 docker compose up --build
 ```
 
-Log in with any student ID S1001-S1032 and the `DEFAULT_STUDENT_PASSWORD` from `backend/.env`.
+Log in with a demo roll number (see `backend/data/students/students.csv`, e.g. `2024UCS3004`) and `DEFAULT_STUDENT_PASSWORD`, or create an account with an `@nsut.ac.in` email. Staff: `BOOTSTRAP_ADMIN_ID` / `BOOTSTRAP_ADMIN_PASSWORD`.
 
 ### Judges' data
 
@@ -89,12 +89,18 @@ curl localhost:8000/sources
 curl localhost:8000/health
 ```
 
-## Authentication
+## Accounts and authentication
 
-- `POST /login` checks the student ID and password (PBKDF2 hash with salt, never stored in plain text) and returns a token signed with `SECRET_KEY` (HMAC-SHA256, expires after `TOKEN_HOURS`).
-- The React app sends `X-Student-Id` and `Authorization: Bearer <token>`. A token for a different student than `X-Student-Id` is rejected (403).
-- `AUTH_REQUIRED=false` (default) keeps the guide's contract: the `X-Student-Id` header alone works, so judges' scripts run unchanged. Set it to `true` to require a token.
-- Identity never comes from the question text. Questions about another student are refused.
+| Who | How |
+|---|---|
+| Student | Logs in with **roll number** (e.g. `2023UIT3015`) + password. Creates the account with the university email (`@nsut.ac.in`) and a 6-digit **email OTP**. "Forgot password" (OTP, new password) and "Forgot roll number" (emailed). Sees only the chat; the chat history is saved. |
+| University staff | Separate **staff ID + password**. Adds documents (`/ingest`) and sees the Source Register. First staff account from `BOOTSTRAP_ADMIN_ID/PASSWORD` in `.env`, more with `python scripts/create_admin.py`. |
+
+- **MongoDB** stores accounts (salted PBKDF2 password hashes), OTPs (hashed, expire after `OTP_MINUTES`, auto-deleted, max `OTP_MAX_ATTEMPTS` tries) and chat history. Student records and rules stay in **SQLite** (guide requirement). `roll_number` is an extra column on `students`; `student_id` (S####) is unchanged, so the judges' data and `X-Student-Id` header work as the guide says.
+- **Email** is sent over SMTP (`SMTP_*` in `.env`) with Python's `smtplib`. `DEV_PRINT_OTP=true` prints OTPs in the server log when SMTP is not configured (development only).
+- Tokens are signed with `SECRET_KEY` (HMAC-SHA256) and carry the role (`student` / `admin`). A student token for a different student than `X-Student-Id` is rejected (403); a student token cannot ingest documents.
+- `AUTH_REQUIRED=false` and `INGEST_REQUIRES_ADMIN=false` keep the guide's open contract for the judges' scripts; set both to `true` in production.
+- Demo accounts (no email) for all synthetic students: `CREATE_DEMO_ACCOUNTS=true` + `DEFAULT_STUDENT_PASSWORD`.
 
 ## How conflicts are resolved (Annex A)
 

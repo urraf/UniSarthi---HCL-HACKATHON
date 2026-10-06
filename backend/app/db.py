@@ -1,5 +1,6 @@
 """
-SQLite database: student records, rule registry, source register, logins, audit log.
+SQLite database: student records, rule registry, source register, audit log.
+(Accounts, OTPs and chat history are in MongoDB, see mongo.py.)
 
 The first five tables follow the guide's fixed schema (Annex C) exactly.
 We only ADD tables/columns, never rename or remove the required ones.
@@ -17,7 +18,8 @@ CREATE TABLE IF NOT EXISTS students (
     batch_year       INTEGER NOT NULL,      -- year of admission
     current_semester INTEGER NOT NULL,      -- 1-10
     cgpa             REAL NOT NULL,         -- 0.00-10.00
-    active_backlogs  INTEGER NOT NULL       -- >= 0
+    active_backlogs  INTEGER NOT NULL,      -- >= 0
+    roll_number      TEXT UNIQUE            -- our extra column: university roll number, e.g. 2023UIT3015
 );
 
 CREATE TABLE IF NOT EXISTS courses (
@@ -83,13 +85,6 @@ CREATE TABLE IF NOT EXISTS documents (
     synthetic        TEXT DEFAULT 'N',
     file_name        TEXT DEFAULT '',
     chunks_indexed   INTEGER DEFAULT 0
-);
-
--- Login details. Only a salted hash of the password is stored.
-CREATE TABLE IF NOT EXISTS student_logins (
-    student_id    TEXT PRIMARY KEY REFERENCES students(student_id),
-    salt          TEXT NOT NULL,
-    password_hash TEXT NOT NULL
 );
 
 -- One row per /ask response (R10). The full record is stored as JSON.

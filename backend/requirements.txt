@@ -17,5 +17,9 @@ posthog<6               # chromadb 0.6 telemetry breaks with posthog 6+
 requests==2.32.3
 python-dotenv==1.0.1
 
-# Tests
+# Accounts, OTPs and chat history
+pymongo==4.10.1
+
+# Tests (mongomock = in-memory MongoDB for tests)
+mongomock==4.3.0
 pytest==8.3.4

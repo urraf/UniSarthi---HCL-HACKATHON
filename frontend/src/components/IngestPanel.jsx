@@ -12,7 +12,7 @@ const DOC_TYPES = ["regulation", "circular", "notice", "faq", "handbook", "unoff
 const LEVELS = { 1: "1 - Statutes, ordinances, regulations", 2: "2 - Official circulars / notifications",
   3: "3 - Department notices", 4: "4 - Handbooks and FAQs", 5: "5 - Unofficial content" };
 
-export default function IngestPanel() {
+export default function IngestPanel({ session }) {
   const [meta, setMeta] = useState(EMPTY);
   const [file, setFile] = useState(null);
   const [result, setResult] = useState(null);
@@ -27,7 +27,7 @@ export default function IngestPanel() {
     setResult(null);
     setLoading(true);
     try {
-      setResult(await ingest(file, { ...meta, authority_level: Number(meta.authority_level) }));
+      setResult(await ingest(session, file, { ...meta, authority_level: Number(meta.authority_level) }));
     } catch (err) {
       setError(err.message);
     } finally {

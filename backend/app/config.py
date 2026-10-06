@@ -37,6 +37,28 @@ SECRET_KEY = os.getenv("SECRET_KEY", "")
 TOKEN_HOURS = int(os.getenv("TOKEN_HOURS", "8"))
 AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "false").lower() == "true"
 
+# ---------- MongoDB: accounts, OTPs, chat history ----------
+MONGODB_URI = os.getenv("MONGODB_URI", "")          # e.g. mongodb+srv://user:pass@cluster/  (tests: mongomock://)
+MONGODB_DB = os.getenv("MONGODB_DB", "unisarthi")
+
+# First staff account, created at startup if both are set (then manage staff with scripts/create_admin.py)
+BOOTSTRAP_ADMIN_ID = os.getenv("BOOTSTRAP_ADMIN_ID", "")
+BOOTSTRAP_ADMIN_PASSWORD = os.getenv("BOOTSTRAP_ADMIN_PASSWORD", "")
+
+# ---------- Email (OTP) ----------
+SMTP_HOST = os.getenv("SMTP_HOST", "")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))      # 587 = STARTTLS, 465 = SSL
+SMTP_USER = os.getenv("SMTP_USER", "")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
+SMTP_FROM = os.getenv("SMTP_FROM", "")
+ALLOWED_EMAIL_DOMAIN = os.getenv("ALLOWED_EMAIL_DOMAIN", "nsut.ac.in")
+OTP_MINUTES = int(os.getenv("OTP_MINUTES", "10"))
+OTP_MAX_ATTEMPTS = int(os.getenv("OTP_MAX_ATTEMPTS", "5"))
+# Development only: if SMTP is not configured, print the OTP in the server log instead of failing
+DEV_PRINT_OTP = os.getenv("DEV_PRINT_OTP", "false").lower() == "true"
+# true -> POST /ingest needs a staff (admin) token. false keeps the guide's open contract for judges.
+INGEST_REQUIRES_ADMIN = os.getenv("INGEST_REQUIRES_ADMIN", "false").lower() == "true"
+
 # ---------- Frontend ----------
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 

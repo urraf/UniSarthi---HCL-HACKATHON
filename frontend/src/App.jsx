@@ -1,44 +1,50 @@
-// Main screen: login first, then three tabs (Chat, Upload document, Sources).
+// Main screen. Not logged in -> AuthScreen.
+// Students see only the chat. University staff see "Add document" and "Sources".
 import { useState } from "react";
-import Login from "./components/Login.jsx";
+import AuthScreen from "./components/AuthScreen.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import IngestPanel from "./components/IngestPanel.jsx";
 import SourcesPanel from "./components/SourcesPanel.jsx";
 
-const TABS = ["Chat", "Upload document", "Sources"];
+const STAFF_TABS = ["Add document", "Sources"];
 
 export default function App() {
-  // session = { token, student_id, full_name, programme, batch_year } after login
+  // session = login response: { token, role: "student" | "admin", ... }
   const [session, setSession] = useState(null);
-  const [tab, setTab] = useState(TABS[0]);
+  const [tab, setTab] = useState(STAFF_TABS[0]);
 
-  if (!session) return <Login onLogin={setSession} />;
+  if (!session) return <AuthScreen onLogin={setSession} />;
+  const isStaff = session.role === "admin";
 
   return (
     <div className="page">
       <header className="topbar">
         <div>
           <h1>UniSarthi</h1>
-          <span className="muted">Student services assistant</span>
+          <span className="muted">{isStaff ? "Staff: manage university documents" : "Student services assistant"}</span>
         </div>
         <div className="who">
-          <strong>{session.full_name}</strong>
-          <span className="muted">
-            {session.student_id} · {session.programme} · batch {session.batch_year}
-          </span>
+          <strong>{isStaff ? session.admin_id : session.full_name}</strong>
+          {!isStaff && (
+            <span className="muted">{session.roll_number} · {session.programme} · batch {session.batch_year}</span>
+          )}
           <button className="link" onClick={() => setSession(null)}>Log out</button>
         </div>
       </header>
 
-      <nav className="tabs">
-        {TABS.map((t) => (
-          <button key={t} className={t === tab ? "tab active" : "tab"} onClick={() => setTab(t)}>{t}</button>
-        ))}
-      </nav>
-
-      {tab === "Chat" && <ChatPanel session={session} />}
-      {tab === "Upload document" && <IngestPanel />}
-      {tab === "Sources" && <SourcesPanel />}
+      {isStaff ? (
+        <>
+          <nav className="tabs">
+            {STAFF_TABS.map((t) => (
+              <button key={t} className={t === tab ? "tab active" : "tab"} onClick={() => setTab(t)}>{t}</button>
+            ))}
+          </nav>
+          {tab === "Add document" && <IngestPanel session={session} />}
+          {tab === "Sources" && <SourcesPanel />}
+        </>
+      ) : (
+        <ChatPanel session={session} />
+      )}
     </div>
   );
 }

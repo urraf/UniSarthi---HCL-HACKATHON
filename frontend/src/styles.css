@@ -39,7 +39,12 @@ button { font: inherit; cursor: pointer; }
 .link { background: none; border: none; color: var(--accent); padding: 0 0 0 8px; }
 
 .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-.login { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 10px; }
+.login { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+
+.mode-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.mode { background: var(--bg); border: 1px solid var(--line); border-radius: 99px; padding: 5px 10px; font-size: 12px; color: var(--muted); }
+.mode.active { background: var(--accent); border-color: var(--accent); color: white; }
+.chat-options .clear { margin-left: auto; }
 
 /* ---- Chat ---- */
 .chat { display: flex; flex-direction: column; height: calc(100vh - 170px); min-height: 420px;

@@ -152,12 +152,15 @@ def main() -> None:
                     backlogs += 1
                 results.append([s.student_id, c.course_code, plan["exam_session"], "REGULAR",
                                 c.internal_marks, c.external_marks, total, plan["max_marks"], result])
+            # Roll number = batch year + programme code + serial (e.g. 2023UIT3015), from the plan
+            serial = plan["roll_number_first_serial"] + out.students.index(s)
+            roll = f"{group['batch_year']}{plan['roll_number_codes'][group['programme']]}{serial}"
             students.append([s.student_id, s.full_name, group["programme"], group["batch_year"],
-                             group["current_semester"], round(s.cgpa, 2), backlogs])
+                             group["current_semester"], round(s.cgpa, 2), backlogs, roll])
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     write_csv("students.csv", ["student_id", "full_name", "programme", "batch_year", "current_semester",
-                               "cgpa", "active_backlogs"], students)
+                               "cgpa", "active_backlogs", "roll_number"], students)
     write_csv("courses.csv", ["course_code", "course_name", "programme", "semester", "credits"],
               [[c["course_code"], c["course_name"], c["programme"], c["semester"], c["credits"]] for c in plan["courses"]])
     write_csv("attendance.csv", ["student_id", "course_code", "classes_held", "classes_attended"], attendance)

@@ -1,23 +1,75 @@
 {
-  "_comment": "What the synthetic data generator should create. Edit this file, not the code.",
+  "_comment": "What the synthetic data generator should create. Edit this file, not the code. Roll number = batch_year + programme code + serial, e.g. 2023UIT3015.",
   "exam_session": "2026-MAY",
   "max_marks": 100,
   "internal_max": 40,
   "external_max": 60,
   "courses": [
-    {"course_code": "CS101", "course_name": "Programming in C", "programme": "B.Tech CSE", "semester": 2, "credits": 4},
-    {"course_code": "MA101", "course_name": "Engineering Mathematics II", "programme": "B.Tech CSE", "semester": 2, "credits": 4},
-    {"course_code": "CS201", "course_name": "Data Structures", "programme": "B.Tech CSE", "semester": 4, "credits": 4},
-    {"course_code": "CS202", "course_name": "Database Management Systems", "programme": "B.Tech CSE", "semester": 4, "credits": 4},
-    {"course_code": "EC101", "course_name": "Basic Electronics", "programme": "B.Tech ECE", "semester": 2, "credits": 4},
-    {"course_code": "MA102", "course_name": "Engineering Mathematics II", "programme": "B.Tech ECE", "semester": 2, "credits": 4},
-    {"course_code": "EC201", "course_name": "Signals and Systems", "programme": "B.Tech ECE", "semester": 4, "credits": 4},
-    {"course_code": "EC202", "course_name": "Digital Electronics", "programme": "B.Tech ECE", "semester": 4, "credits": 4}
+    {
+      "course_code": "CS101",
+      "course_name": "Programming in C",
+      "programme": "B.Tech CSE",
+      "semester": 2,
+      "credits": 4
+    },
+    {
+      "course_code": "MA101",
+      "course_name": "Engineering Mathematics II",
+      "programme": "B.Tech CSE",
+      "semester": 2,
+      "credits": 4
+    },
+    {
+      "course_code": "CS201",
+      "course_name": "Data Structures",
+      "programme": "B.Tech CSE",
+      "semester": 4,
+      "credits": 4
+    },
+    {
+      "course_code": "CS202",
+      "course_name": "Database Management Systems",
+      "programme": "B.Tech CSE",
+      "semester": 4,
+      "credits": 4
+    },
+    {
+      "course_code": "EC101",
+      "course_name": "Basic Electronics",
+      "programme": "B.Tech ECE",
+      "semester": 2,
+      "credits": 4
+    },
+    {
+      "course_code": "MA102",
+      "course_name": "Engineering Mathematics II",
+      "programme": "B.Tech ECE",
+      "semester": 2,
+      "credits": 4
+    },
+    {
+      "course_code": "EC201",
+      "course_name": "Signals and Systems",
+      "programme": "B.Tech ECE",
+      "semester": 4,
+      "credits": 4
+    },
+    {
+      "course_code": "EC202",
+      "course_name": "Digital Electronics",
+      "programme": "B.Tech ECE",
+      "semester": 4,
+      "credits": 4
+    }
   ],
   "groups": [
     {
-      "programme": "B.Tech CSE", "batch_year": 2024, "current_semester": 5, "course_semester": 4,
-      "first_id": 1001, "count": 8,
+      "programme": "B.Tech CSE",
+      "batch_year": 2024,
+      "current_semester": 5,
+      "course_semester": 4,
+      "first_id": 1001,
+      "count": 8,
       "edge_cases": [
         "S1001: in CS201 classes_held=50 and classes_attended=40 (attendance exactly 80%), PASS in both courses",
         "S1002: in CS201 classes_held=50 and classes_attended=39 (one class below 80%), PASS in both courses",
@@ -29,16 +81,24 @@
       ]
     },
     {
-      "programme": "B.Tech CSE", "batch_year": 2025, "current_semester": 3, "course_semester": 2,
-      "first_id": 1009, "count": 8,
+      "programme": "B.Tech CSE",
+      "batch_year": 2025,
+      "current_semester": 3,
+      "course_semester": 2,
+      "first_id": 1009,
+      "count": 8,
       "edge_cases": [
         "S1009: in CS101 classes_held=40 and classes_attended=30 (attendance exactly 75%), PASS in both courses",
         "S1010: FAIL in MA101 with total 38"
       ]
     },
     {
-      "programme": "B.Tech ECE", "batch_year": 2024, "current_semester": 5, "course_semester": 4,
-      "first_id": 1017, "count": 8,
+      "programme": "B.Tech ECE",
+      "batch_year": 2024,
+      "current_semester": 5,
+      "course_semester": 4,
+      "first_id": 1017,
+      "count": 8,
       "edge_cases": [
         "S1017: in EC201 classes_held=45 and classes_attended=36 (attendance exactly 80%), PASS in both courses",
         "S1018: cgpa exactly 6.5 and FAIL in EC202 (one backlog)",
@@ -46,12 +106,22 @@
       ]
     },
     {
-      "programme": "B.Tech ECE", "batch_year": 2025, "current_semester": 3, "course_semester": 2,
-      "first_id": 1025, "count": 8,
+      "programme": "B.Tech ECE",
+      "batch_year": 2025,
+      "current_semester": 3,
+      "course_semester": 2,
+      "first_id": 1025,
+      "count": 8,
       "edge_cases": [
         "S1025: DETAINED in EC101 with classes_held=40 and classes_attended=24 (60%), external_marks=0",
         "S1026: in MA102 internal_marks=16 and external_marks=23 (total 39, just below pass), result FAIL"
       ]
     }
-  ]
+  ],
+  "roll_number_codes": {
+    "B.Tech CSE": "UCS",
+    "B.Tech ECE": "UEC",
+    "B.Tech IT": "UIT"
+  },
+  "roll_number_first_serial": 3001
 }

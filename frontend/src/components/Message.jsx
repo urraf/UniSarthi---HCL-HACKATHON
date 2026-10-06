@@ -1,4 +1,4 @@
-// One chat bubble. Assistant answers also show their type, sources, tools, rules and audit.
+// One chat bubble. Assistant answers also show their type, tools, rules, conflicts and audit (sources are not shown to students).
 import { useEffect, useState } from "react";
 import { getAudit } from "../api.js";
 
@@ -54,20 +54,6 @@ function Details({ response }) {
   return (
     <div className="details">
       {response.explanation && <p className="muted">{response.explanation}</p>}
-
-      {response.citations.length > 0 && (
-        <details>
-          <summary>Sources ({response.citations.length})</summary>
-          <ul>
-            {response.citations.map((c) => (
-              <li key={`${c.doc_id}-${c.section}`}>
-                <strong>{c.title}</strong> ({c.doc_id}) · section {c.section}
-                {c.page ? ` · page ${c.page}` : ""} · v{c.version} · effective {c.effective_from}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
 
       {response.tools_invoked.length > 0 && (
         <details>

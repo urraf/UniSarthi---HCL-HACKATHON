@@ -13,6 +13,8 @@ os.environ["DB_PATH"] = str(Path(_tmp) / "test.db")
 os.environ["CHROMA_DIR"] = str(Path(_tmp) / "chroma")
 os.environ["LLM_PROVIDER"] = "mock"
 os.environ["SECRET_KEY"] = "test-secret-only-for-tests"
+os.environ["MONGODB_URI"] = "mongomock://"
+os.environ["DEV_PRINT_OTP"] = "true"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -22,10 +24,10 @@ from app import db  # noqa: E402
 from scripts.seed import load_rules, load_source_register  # noqa: E402
 
 TEST_STUDENTS = [
-    # id, name, programme, batch, semester, cgpa, backlogs
-    ("S0001", "Test Exact", "B.Tech CSE", 2024, 5, 6.5, 0),
-    ("S0002", "Test Below", "B.Tech CSE", 2024, 5, 8.0, 1),
-    ("S0003", "Test Detained", "B.Tech CSE", 2025, 3, 7.0, 1),
+    # id, name, programme, batch, semester, cgpa, backlogs, roll number
+    ("S0001", "Test Exact", "B.Tech CSE", 2024, 5, 6.5, 0, "2024UCS0001"),
+    ("S0002", "Test Below", "B.Tech CSE", 2024, 5, 8.0, 1, "2024UCS0002"),
+    ("S0003", "Test Detained", "B.Tech CSE", 2025, 3, 7.0, 1, "2025UCS0003"),
 ]
 TEST_COURSES = [("TC201", "Test Course A", "B.Tech CSE", 4, 4), ("TC202", "Test Course B", "B.Tech CSE", 4, 4)]
 TEST_ATTENDANCE = [
@@ -46,7 +48,7 @@ def test_db():
     load_source_register()
     load_rules()
     with db.connect() as conn:
-        conn.executemany("INSERT INTO students VALUES (?,?,?,?,?,?,?)", TEST_STUDENTS)
+        conn.executemany("INSERT INTO students VALUES (?,?,?,?,?,?,?,?)", TEST_STUDENTS)
         conn.executemany("INSERT INTO courses VALUES (?,?,?,?,?)", TEST_COURSES)
         conn.executemany("INSERT INTO attendance VALUES (?,?,?,?)", TEST_ATTENDANCE)
         conn.executemany("INSERT INTO results VALUES (?,?,?,?,?,?,?,?,?)", TEST_RESULTS)

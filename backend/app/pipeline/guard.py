@@ -11,6 +11,7 @@ from app import tools
 from app.pipeline.state import State
 
 STUDENT_ID = re.compile(r"\bS\d{4}\b", re.IGNORECASE)
+ROLL_NUMBER = re.compile(r"\b\d{4}[A-Z]{3}\d{4}\b", re.IGNORECASE)  # e.g. 2023UIT3015
 # Phrases that mean "someone else's records"
 OTHER_PERSON = re.compile(
     r"\b(my friend'?s?|another student'?s?|other student'?s?|classmate'?s?|roommate'?s?)\s+"
@@ -37,6 +38,12 @@ def guard(state: State) -> dict:
         student = tools.get_student_profile(own_id)
         if student is None:
             return refuse(f"Student ID {own_id} is not registered.")
+
+    # Another student's roll number in the question
+    own_roll = ((student or {}).get("roll_number") or "").upper()
+    for found in ROLL_NUMBER.findall(question):
+        if found.upper() != own_roll:
+            return refuse("I can only share your own records. Requests for another student's data are not allowed.")
 
     return {"student": student}
 

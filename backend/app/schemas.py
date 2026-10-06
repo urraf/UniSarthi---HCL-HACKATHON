@@ -54,16 +54,3 @@ class IngestResponse(BaseModel):
     chunks_indexed: int
     status: str
     rules_added: list[dict]
-
-
-class LoginRequest(BaseModel):
-    student_id: str = Field(pattern=r"^S\d{4}$")
-    password: str = Field(min_length=1)
-
-
-class LoginResponse(BaseModel):
-    token: str
-    student_id: str
-    full_name: str
-    programme: str
-    batch_year: int
