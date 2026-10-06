@@ -9,8 +9,9 @@ import ChatPanel from "./components/ChatPanel.jsx";
 import IngestPanel from "./components/IngestPanel.jsx";
 import SourcesPanel from "./components/SourcesPanel.jsx";
 import DataPanel from "./components/DataPanel.jsx";
+import VectorPanel from "./components/VectorPanel.jsx";
 
-const STAFF_TABS = ["Student data", "Add document", "Sources"];
+const STAFF_TABS = ["Student data", "Vector store", "Add document", "Sources"];
 const STORAGE_KEY = "unisarthi_session";
 
 function loadSaved() {
@@ -83,6 +84,7 @@ export default function App() {
             ))}
           </nav>
           {tab === "Student data" && <DataPanel session={session} />}
+          {tab === "Vector store" && <VectorPanel session={session} />}
           {tab === "Add document" && <IngestPanel session={session} />}
           {tab === "Sources" && <SourcesPanel />}
         </>

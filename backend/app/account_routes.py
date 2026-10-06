@@ -12,6 +12,7 @@ staff login, and chat history. Data lives in MongoDB (see mongo.py).
   GET  /auth/session                                            -> is my login still valid?
   GET  /conversations, GET/DELETE /conversations/{id}          -> the student's saved chats
   GET  /admin/tables/{students|attendance|results|courses|rules} -> staff: read-only table view
+  GET  /admin/vectors?q=&doc_id=                                -> staff: look inside ChromaDB / test search
 """
 import uuid
 from datetime import datetime, timezone
@@ -247,3 +248,33 @@ def staff_table(name: str, authorization: str | None = Header(default=None)):
     if name not in STAFF_TABLES:
         raise HTTPException(status_code=404, detail=f"Unknown table. Choose one of: {', '.join(STAFF_TABLES)}")
     return db.query(STAFF_TABLES[name])
+
+
+# ---------- Staff: look inside ChromaDB ----------
+@router.get("/admin/vectors")
+def staff_vectors(q: str = "", doc_id: str = "", limit: int = 50, authorization: str | None = Header(default=None)):
+    """
+    University staff only.
+      - q given:      run the same hybrid search the assistant uses and show the top chunks with their scores
+      - otherwise:    chunks per document, plus up to `limit` chunks (optionally of one document)
+    """
+    from app import vectors
+    current(authorization, "admin")
+    coll = vectors.collection()
+    preview = lambda t: " ".join(t.split())[:300]
+    if q.strip():
+        hits = vectors.hybrid_search(q.strip(), k=10)
+        return {"mode": "search", "query": q, "model": config.EMBED_MODEL, "results": [
+            {"rank": i + 1, "similarity": h.get("similarity"), "keyword_rank": h.get("keyword_rank"), "doc_id": h["doc_id"],
+             "page": h.get("page"), "section": h.get("section"), "authority_level": h.get("authority_level"),
+             "text": preview(h["text"])} for i, h in enumerate(hits)]}
+
+    data = coll.get(include=["metadatas", "documents"], where={"doc_id": doc_id} if doc_id else None)
+    per_doc = {}
+    for m in data["metadatas"]:
+        per_doc[m["doc_id"]] = per_doc.get(m["doc_id"], 0) + 1
+    chunks = [{"id": cid, "doc_id": m["doc_id"], "page": m.get("page"), "section": m.get("section"),
+               "authority_level": m.get("authority_level"), "effective_from": m.get("effective_from"), "text": preview(t)}
+              for cid, m, t in list(zip(data["ids"], data["metadatas"], data["documents"]))[:max(1, min(limit, 200))]]
+    return {"mode": "browse", "collection": coll.name, "model": config.EMBED_MODEL, "total_chunks": coll.count(),
+            "chunks_per_document": dict(sorted(per_doc.items())), "chunks": chunks}

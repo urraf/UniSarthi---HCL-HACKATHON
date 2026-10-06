@@ -70,6 +70,9 @@ export const getMe = (session) =>
 
 export const getTable = (session, name) => get(`/admin/tables/${name}`, session);
 
+export const getVectors = (session, { q = "", docId = "" } = {}) =>
+  get(`/admin/vectors?q=${encodeURIComponent(q)}&doc_id=${encodeURIComponent(docId)}`, session);
+
 export const getSources = () => fetch(`${API_URL}/sources`).then(handle);
 export const getAudit = (traceId) => fetch(`${API_URL}/audit/${traceId}`).then(handle);
 export const getHealth = () => fetch(`${API_URL}/health`).then(handle);
