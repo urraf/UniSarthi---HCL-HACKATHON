@@ -2,6 +2,7 @@
 #   API  -> http://localhost:8000  (docs at /docs)
 #   UI   -> http://localhost:5173
 # Settings and secrets come from backend/.env (copy .env.example first).
+# MongoDB runs as the 'mongo' service; to use MongoDB Atlas instead, remove it and set MONGODB_URI in .env.
 # Ollama (if LLM_PROVIDER=ollama) runs on the host machine, reached via host.docker.internal.
 services:
   api:
@@ -9,6 +10,8 @@ services:
     env_file: ./backend/.env
     environment:
       OLLAMA_URL: http://host.docker.internal:11434
+      # Permanent database for accounts, OTPs and chat history (the mongo service below)
+      MONGODB_URI: mongodb://mongo:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -16,6 +19,13 @@ services:
     volumes:
       # SQLite + ChromaDB + documents live here, so they survive restarts (no re-ingest)
       - ./backend/data:/app/data
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db     # accounts and chat history survive restarts
 
   ui:
     build: ./frontend
@@ -25,3 +35,6 @@ services:
       - "5173:5173"
     depends_on:
       - api
+
+volumes:
+  mongo-data:
