@@ -1,7 +1,7 @@
 """
 Step 3 - Find the evidence (no LLM).
 
-1. Search ChromaDB with the question and the LLM's rewritten search query (better recall).
+1. Hybrid search (ChromaDB vectors + BM25 keywords) with the question and the LLM's rewritten search query.
 2. Keep only chunks in force on as_of_date and in scope for this student (precedence step 1).
    Not-yet-effective documents are kept aside as "upcoming".
 3. Drop chunks whose clause was superseded by a level 1-2 document (precedence step 2).
@@ -21,10 +21,12 @@ def find(state: State) -> dict:
     # Search with the original question and the LLM's rewritten search query; keep each chunk's best score
     best = {}
     for query in {state["question"], state.get("search_query") or state["question"]}:
-        for h in vectors.search(query, k=config.TOP_K * 3):
+        for h in vectors.hybrid_search(query, k=config.TOP_K * 3):
             if h["id"] not in best or h["similarity"] > best[h["id"]]["similarity"]:
                 best[h["id"]] = h
-    hits = [h for h in best.values() if h["similarity"] >= config.MIN_SIMILARITY]
+    # Relevant enough: close in meaning, or a top keyword match that is still reasonably close
+    hits = [h for h in best.values() if h["similarity"] >= config.MIN_SIMILARITY
+            or (h.get("keyword_rank", 99) <= 3 and h["similarity"] >= config.MIN_SIMILARITY - 0.1)]
 
     upcoming = [h for h in hits if h["effective_from"] > as_of and covers(h, student)]
     live = [h for h in hits if is_effective(h, as_of) and covers(h, student)]
@@ -33,7 +35,7 @@ def find(state: State) -> dict:
     live = [h for h in live if h["doc_id"] not in replaced and clause_ref(h) not in replaced]
 
     # Keep the TOP_K most relevant chunks, THEN order them by precedence for the LLM
-    evidence = sorted(live, key=lambda h: -h["similarity"])[: config.TOP_K]
+    evidence = sorted(live, key=lambda h: (-h["similarity"] - (0.05 if h.get("keyword_rank", 99) <= 3 else 0)))[: config.TOP_K]
     evidence.sort(key=lambda h: (h["authority_level"], _neg_date(h["effective_from"]), -h["similarity"]))
     for i, e in enumerate(evidence, start=1):
         e["evidence_id"] = f"E{i}"

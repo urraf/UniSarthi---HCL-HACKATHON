@@ -33,7 +33,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 
 # ---------- Retrieval ----------
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-TOP_K = int(os.getenv("TOP_K", "4"))
+TOP_K = int(os.getenv("TOP_K", "5"))
 MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.50"))
 
 # ---------- Authentication ----------

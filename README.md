@@ -32,7 +32,7 @@ Any step can stop early (refused, clarification_needed, not_found) and jump to f
 | API | FastAPI + Pydantic v2 | Required; Pydantic models are the API contract |
 | Orchestration | LangGraph, one graph | Required; same steps for every question, so no extra agents |
 | LLM | Groq `qwen/qwen3.8-27b`, or Ollama `qwen2.5:7b-instruct` | Fastest valid-JSON model we tested (0.17 s). One switch: `LLM_PROVIDER` |
-| Embeddings | `all-MiniLM-L6-v2` | Beat bge-small on our eval (see Evaluation) |
+| Embeddings + search | `all-MiniLM-L6-v2` + BM25 keywords (hybrid, reciprocal rank fusion) | Same model as the team's ChromaDB; keywords catch exact terms like "hostel fee" |
 | Vector store | ChromaDB, persisted | Required; no re-ingest on restart |
 | Data | SQLite | Required; Annex C schema unchanged |
 
