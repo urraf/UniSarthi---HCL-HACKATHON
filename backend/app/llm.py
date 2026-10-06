@@ -53,7 +53,13 @@ def chat_json(system: str, user: str, temperature: float = 0.0) -> tuple[dict, d
             return _call(url, headers, name, system, user, temperature)
         except DailyLimit:
             continue  # this model's daily quota is used up: try the next one
-    raise LLMError("All configured models have reached their daily token limit")
+        except LLMError:
+            break     # Groq unreachable or still rate limited: go to the local model if allowed
+
+    # Last resort: the local Ollama model (no quota, slower)
+    if config.LLM_PROVIDER == "groq" and config.FALLBACK_TO_OLLAMA:
+        return _call(f"{config.OLLAMA_URL}/v1/chat/completions", {}, config.OLLAMA_MODEL, system, user, temperature)
+    raise LLMError("All configured models are over their limit or unavailable")
 
 
 class DailyLimit(Exception):

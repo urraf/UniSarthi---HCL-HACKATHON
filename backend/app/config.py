@@ -26,6 +26,8 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 # Used in order when a model hits its daily token limit (each Groq model has its own quota)
 GROQ_FALLBACK_MODELS = [m.strip() for m in os.getenv("GROQ_FALLBACK_MODELS", "").split(",") if m.strip()]
+# true -> if every Groq model is over its limit (or Groq is unreachable), use the local Ollama model
+FALLBACK_TO_OLLAMA = os.getenv("FALLBACK_TO_OLLAMA", "false").lower() == "true"
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 
