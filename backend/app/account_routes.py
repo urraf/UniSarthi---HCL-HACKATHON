@@ -11,6 +11,7 @@ staff login, and chat history. Data lives in MongoDB (see mongo.py).
   POST /admin/login            {admin_id, password}             -> staff token
   GET  /auth/session                                            -> is my login still valid?
   GET  /conversations, GET/DELETE /conversations/{id}          -> the student's saved chats
+  GET  /admin/tables/{students|attendance|results|courses|rules} -> staff: read-only table view
 """
 import uuid
 from datetime import datetime, timezone
@@ -219,3 +220,30 @@ def delete_conversation(conversation_id: str, authorization: str | None = Header
     get_db().conversations.delete_one({"conversation_id": conversation_id, "student_id": student_id})
     get_db().messages.delete_many({"conversation_id": conversation_id, "student_id": student_id})
     return {"message": "Chat deleted"}
+
+
+# ---------- Staff: read-only view of the database tables ----------
+STAFF_TABLES = {
+    "students": "SELECT student_id, roll_number, full_name, programme, batch_year, current_semester, cgpa, active_backlogs "
+                "FROM students ORDER BY student_id",
+    "attendance": "SELECT s.student_id, s.roll_number, s.full_name, a.course_code, c.course_name, a.classes_attended, "
+                  "a.classes_held, ROUND(100.0 * a.classes_attended / a.classes_held, 2) AS attendance_pct "
+                  "FROM attendance a JOIN students s USING(student_id) JOIN courses c USING(course_code) "
+                  "ORDER BY s.student_id, c.course_name",
+    "results": "SELECT s.student_id, s.roll_number, s.full_name, r.course_code, c.course_name, r.exam_session, r.exam_type, "
+               "r.internal_marks, r.external_marks, r.total_marks, r.max_marks, r.result, r.grade "
+               "FROM results r JOIN students s USING(student_id) JOIN courses c USING(course_code) "
+               "ORDER BY s.student_id, c.course_name, r.exam_session",
+    "courses": "SELECT * FROM courses ORDER BY programme, semester, course_code",
+    "rules": "SELECT rule_id, description, parameter, operator, value, scope_programmes, scope_batches, effective_from, "
+             "effective_to, source_doc_id, source_section FROM rule_registry ORDER BY rule_id",
+}
+
+
+@router.get("/admin/tables/{name}")
+def staff_table(name: str, authorization: str | None = Header(default=None)):
+    """University staff only: the rows of one table (fixed queries, read-only; attendance % is computed)."""
+    current(authorization, "admin")
+    if name not in STAFF_TABLES:
+        raise HTTPException(status_code=404, detail=f"Unknown table. Choose one of: {', '.join(STAFF_TABLES)}")
+    return db.query(STAFF_TABLES[name])

@@ -68,6 +68,8 @@ export function ingest(session, file, metadata) {
 export const getMe = (session) =>
   fetch(`${API_URL}/me`, { headers: authHeaders(session) }).then(handle);
 
+export const getTable = (session, name) => get(`/admin/tables/${name}`, session);
+
 export const getSources = () => fetch(`${API_URL}/sources`).then(handle);
 export const getAudit = (traceId) => fetch(`${API_URL}/audit/${traceId}`).then(handle);
 export const getHealth = () => fetch(`${API_URL}/health`).then(handle);

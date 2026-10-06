@@ -1,5 +1,5 @@
 // Main screen. Not logged in -> AuthScreen.
-// Students see the chat. University staff see "Add document" and "Sources".
+// Students see the chat. University staff see "Student data", "Add document" and "Sources".
 // The login is kept in the browser (localStorage) so a page refresh does not log you out;
 // on load it is checked with the server (GET /auth/session).
 import { useEffect, useState } from "react";
@@ -8,8 +8,9 @@ import AuthScreen from "./components/AuthScreen.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
 import IngestPanel from "./components/IngestPanel.jsx";
 import SourcesPanel from "./components/SourcesPanel.jsx";
+import DataPanel from "./components/DataPanel.jsx";
 
-const STAFF_TABS = ["Add document", "Sources"];
+const STAFF_TABS = ["Student data", "Add document", "Sources"];
 const STORAGE_KEY = "unisarthi_session";
 
 function loadSaved() {
@@ -81,6 +82,7 @@ export default function App() {
               <button key={t} className={t === tab ? "tab active" : "tab"} onClick={() => setTab(t)}>{t}</button>
             ))}
           </nav>
+          {tab === "Student data" && <DataPanel session={session} />}
           {tab === "Add document" && <IngestPanel session={session} />}
           {tab === "Sources" && <SourcesPanel />}
         </>

@@ -109,3 +109,9 @@ button { font: inherit; cursor: pointer; }
 table { border-collapse: collapse; width: 100%; font-size: 14px; }
 th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
 th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
+
+/* ---- Staff: student data ---- */
+.data-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.data-toolbar input { flex: 1; min-width: 200px; }
+.table-wrap { max-height: calc(100vh - 260px); overflow: auto; }
+.table-wrap th { position: sticky; top: 0; background: var(--card); }
