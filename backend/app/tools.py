@@ -4,7 +4,7 @@ Deterministic tools: plain Python over SQLite.
 Rules of this file:
   - No LLM here. Every number and every ELIGIBLE / NOT_ELIGIBLE comes from code.
   - No thresholds typed in the code. They are read from rule_registry via get_rule(),
-    which applies the precedence policy for the student's programme, batch and date.
+    applies the precedence policy for the student's programme, batch and date.
   - student_id is always passed in by the pipeline (from the login/header),
     never chosen by the LLM.
 """
