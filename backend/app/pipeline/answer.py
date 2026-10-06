@@ -51,6 +51,16 @@ def answer(state: State) -> dict:
     evidence = state.get("evidence", [])
     tools_invoked = state.get("tools_invoked", [])
 
+    # "What is my CGPA / how many backlogs?": straight from the student's record, no LLM needed
+    if state.get("intent") == "my_profile" and tools_invoked and isinstance(tools_invoked[0]["output"], dict):
+        st = tools_invoked[0]["output"]
+        backlogs = st["active_backlogs"]
+        return {"answer": f"Here is your record, {st['full_name'].split()[0]}:\n"
+                          f"- CGPA: **{st['cgpa']:.2f}**\n"
+                          f"- Active backlogs: **{backlogs}**{' (none)' if backlogs == 0 else ''}\n"
+                          f"- Programme: {st['programme']}, batch **{st['batch_year']}**, semester **{st['current_semester']}**",
+                "used_evidence": [], "explanation": "From your student record.", "conflicts": []}
+
     # "What are my subjects?": a plain list, no LLM needed
     if state.get("intent") == "my_courses" and tools_invoked and isinstance(tools_invoked[0]["output"], list):
         courses = tools_invoked[0]["output"]
@@ -78,6 +88,8 @@ def answer(state: State) -> dict:
 
     reply["answer"] = clean_ids(str(reply.get("answer", "")))
     reply["explanation"] = clean_ids(str(reply.get("explanation", "")))
+    if not reply["answer"].strip() and reply["explanation"].strip():  # never show an empty answer line
+        reply["answer"], reply["explanation"] = reply["explanation"], ""
     valid_ids = {e["evidence_id"] for e in evidence}
     used = [i for i in reply.get("used_evidence", []) if i in valid_ids]
     out = {"llm_calls": llm_calls, "tokens": tokens, "llm_fallback": fallback, "models_used": models_used, "used_evidence": used,

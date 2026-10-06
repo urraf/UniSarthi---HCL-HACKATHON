@@ -16,6 +16,7 @@ from app.pipeline.state import State
 PLANS = {
     "my_courses": [("get_courses", [])],
     "my_attendance": [("get_attendance", ["course_code"])],
+    "my_profile": [("get_student_profile", [])],
     "my_results": [("get_results", ["course_code"])],
     "exam_eligibility": [("get_attendance", ["course_code"]),
                          ("check_exam_eligibility", ["course_code", "as_of"])],
