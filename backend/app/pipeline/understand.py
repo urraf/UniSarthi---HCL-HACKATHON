@@ -75,7 +75,15 @@ def understand(state: State) -> dict:
         return {**out, **refuse("This is a personal question. Please log in (X-Student-Id) to see your own records.")}
 
     if intent in COURSE_INTENTS and not course_code:
-        listing = ", ".join(f"{c['course_code']} {c['course_name']}" for c in courses)
+        with_record = student_courses(student["student_id"], RECORD_TABLE.get(intent))
+        if not with_record:
+            what = RECORD_TABLE.get(intent, "records")
+            return {**out, "stop": True, "answer_type": "not_found",
+                    "answer": f"There are no {what} records for you in the university data.",
+                    "explanation": f"Your {what} is only recorded for courses you are currently registered in."}
+        if len(with_record) == 1:  # only one possible course: no need to ask
+            return {**out, "course_code": with_record[0]["course_code"]}
+        listing = ", ".join(f"{c['course_code']} {c['course_name']}" for c in with_record)
         return {**out, "stop": True, "answer_type": "clarification_needed",
                 "answer": f"Which course do you mean? Your courses are: {listing}.",
                 "explanation": "The question needs a course, and none of your courses was clearly named."}
@@ -107,14 +115,20 @@ def build_prompt(question: str, courses: list[dict], parameters: list[str], name
     )
 
 
-def student_courses(student_id: str) -> list[dict]:
-    """Courses the student has records for (attendance or results)."""
-    return db.query(
-        "SELECT DISTINCT c.course_code, c.course_name FROM courses c "
-        "WHERE c.course_code IN (SELECT course_code FROM attendance WHERE student_id = ? "
-        "UNION SELECT course_code FROM results WHERE student_id = ?)",
-        (student_id, student_id),
-    )
+def student_courses(student_id: str, table: str | None = None) -> list[dict]:
+    """Courses the student has records for: in one table ("attendance" / "results") or in either."""
+    if table in ("attendance", "results"):
+        sub = f"SELECT course_code FROM {table} WHERE student_id = ?"
+        params = (student_id,)
+    else:
+        sub = "SELECT course_code FROM attendance WHERE student_id = ? UNION SELECT course_code FROM results WHERE student_id = ?"
+        params = (student_id, student_id)
+    return db.query(f"SELECT DISTINCT course_code, course_name FROM courses WHERE course_code IN ({sub})", params)
+
+
+# Which table an intent needs, so follow-up questions only offer courses that have that record
+RECORD_TABLE = {"my_attendance": "attendance", "exam_eligibility": "attendance",
+                "supplementary_eligibility": "results", "placement_whatif": "results", "my_results": "results"}
 
 
 def match_course(llm_code: str | None, question: str, courses: list[dict]) -> str | None:

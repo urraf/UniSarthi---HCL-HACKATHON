@@ -25,7 +25,8 @@ def get_attendance(student_id: str, course_code: str) -> dict:
         (student_id, course_code),
     )
     if not row:
-        return {"error": f"No attendance record for {course_code}"}
+        return {"error": f"You have no attendance record for {course_code} (attendance is only recorded "
+                         "for courses you are currently registered in)"}
     # Attendance % is computed here, never stored (guide, Annex C)
     row["attendance_pct"] = round(100 * row["classes_attended"] / row["classes_held"], 2)
     return row
@@ -137,7 +138,7 @@ def check_supplementary_eligibility(student_id: str, course_code: str, as_of: st
     student = get_student_profile(student_id)
     results = get_results(student_id, course_code)
     if not results:
-        return {"error": f"No result found for {course_code}"}
+        return {"error": f"You have no exam result for {course_code}"}
     latest = results[0]
     if latest["result"] == "PASS":
         return {"result": "NOT_NEEDED", "latest_result": "PASS", "course_code": course_code}

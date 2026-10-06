@@ -137,4 +137,6 @@ def me(authorization: str | None = Header(default=None)):
                            "WHERE student_id = ?", (student_id,))
     # The student's courses (used by the app to suggest personal questions)
     profile["courses"] = student_courses(student_id)
+    profile["attendance_courses"] = student_courses(student_id, "attendance")
+    profile["result_courses"] = student_courses(student_id, "results")
     return profile

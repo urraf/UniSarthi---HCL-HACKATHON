@@ -37,6 +37,12 @@ Reply with JSON only."""
 def answer(state: State) -> dict:
     evidence = state.get("evidence", [])
     tools_invoked = state.get("tools_invoked", [])
+
+    # The student's record does not exist (e.g. no attendance for that course): say so plainly
+    errors = [t["output"]["error"] for t in tools_invoked if isinstance(t["output"], dict) and "error" in t["output"]]
+    if tools_invoked and len(errors) == len(tools_invoked):
+        return {"answer_type": "not_found", "answer": errors[0] + ".", "used_evidence": [],
+                "explanation": "This information is not in your records, so it cannot be calculated."}
     llm_calls, tokens = state.get("llm_calls", 0), state.get("tokens", 0)
     fallback = state.get("llm_fallback", False)
     try:
@@ -119,8 +125,18 @@ def template_answer(state: State) -> dict:
     tools_invoked = state.get("tools_invoked", [])
     if tools_invoked:
         last = tools_invoked[-1]["output"]
-        facts = ", ".join(f"{k}: {v}" for k, v in (last.items() if isinstance(last, dict) else [("results", last)]))
-        return {"found": True, "answer": facts, "explanation": "Computed by the tools from your records.", "used_evidence": []}
+        if isinstance(last, dict) and "attendance_pct" in last and "result" not in last:
+            text = (f"Your attendance in {last['course_name']} ({last['course_code']}) is {last['attendance_pct']}% "
+                    f"({last['classes_attended']} of {last['classes_held']} classes).")
+        elif isinstance(last, dict) and "result" in last:
+            details = ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in last.items()
+                                if k != "result" and not isinstance(v, (list, dict)))
+            text = f"Result: {last['result'].replace('_', ' ').lower()}. {details}."
+        else:
+            text = "Here are your records: " + "; ".join(
+                f"{r.get('course_name', '')} {r.get('exam_session', '')} {r.get('result', '')}".strip()
+                for r in (last if isinstance(last, list) else [last]))
+        return {"found": True, "answer": text, "explanation": "Computed by the tools from your records.", "used_evidence": []}
     evidence = state.get("evidence", [])
     if evidence:
         top = evidence[0]

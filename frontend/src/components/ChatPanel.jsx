@@ -36,8 +36,8 @@ export default function ChatPanel({ session }) {
   // Suggested questions use the student's own courses (from GET /me)
   useEffect(() => {
     getMe(session)
-      .then((me) => setSuggestions(buildSuggestions(me.courses)))
-      .catch(() => setSuggestions(buildSuggestions([])));
+      .then((me) => setSuggestions(buildSuggestions(me)))
+      .catch(() => setSuggestions(buildSuggestions({})));
   }, [session]);
 
   // Keep the newest message in view
