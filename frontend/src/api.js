@@ -1,6 +1,8 @@
 // All calls to the FastAPI backend live here.
 // The backend address comes from frontend/.env (VITE_API_URL), not from the code.
-const API_URL = import.meta.env.VITE_API_URL;
+// On Render it may be given as a bare host name ("unisarthi-api.onrender.com"): add https:// then.
+const RAW_API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = /^https?:\/\//.test(RAW_API_URL) ? RAW_API_URL : `https://${RAW_API_URL}`;
 
 // Read the JSON reply; turn HTTP errors into readable messages
 async function handle(res) {

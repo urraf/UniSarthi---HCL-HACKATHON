@@ -12,7 +12,6 @@ from collections import Counter
 
 import chromadb
 from chromadb.config import Settings
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from app import config
 
@@ -31,7 +30,7 @@ def collection(model_name: str | None = None):
     slug = re.sub(r"[^a-zA-Z0-9]+", "-", model_name.split("/")[-1]).strip("-").lower()
     coll = client.get_or_create_collection(
         name=f"docs-{slug}",
-        embedding_function=SentenceTransformerEmbeddingFunction(model_name=model_name),
+        embedding_function=_embedding_function(model_name),
         metadata={"hnsw:space": "cosine"},  # cosine distance: similarity = 1 - distance
     )
     if model_name == config.EMBED_MODEL:
@@ -40,6 +39,18 @@ def collection(model_name: str | None = None):
 
 
 _keyword_index = None  # BM25 index over all chunks, rebuilt when documents change
+
+
+def _embedding_function(model_name: str):
+    """PyTorch sentence-transformers, or ChromaDB's ONNX copy of all-MiniLM-L6-v2 (same model, far less memory)."""
+    if config.EMBED_BACKEND == "onnx":
+        if not model_name.endswith("all-MiniLM-L6-v2"):
+            raise ValueError("EMBED_BACKEND=onnx only supports sentence-transformers/all-MiniLM-L6-v2")
+        from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+        # Plain CPU engine: other ONNX engines (e.g. CoreML on a Mac) use several hundred MB more memory
+        return ONNXMiniLM_L6_V2(preferred_providers=["CPUExecutionProvider"])
+    from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+    return SentenceTransformerEmbeddingFunction(model_name=model_name)
 
 
 def count_chunks(doc_id: str) -> int:

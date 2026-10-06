@@ -58,6 +58,17 @@ docker compose up --build
 
 Log in with a demo roll number (see `backend/data/students/students.csv`, e.g. `2024UCS3004`) and `DEFAULT_STUDENT_PASSWORD`, or create an account with an `@nsut.ac.in` email. Staff: `BOOTSTRAP_ADMIN_ID` / `BOOTSTRAP_ADMIN_PASSWORD`.
 
+## Deploy on Render (free)
+
+`render.yaml` defines two services: **unisarthi-api** (FastAPI, free web service) and **unisarthi-web** (React, free static site).
+
+1. MongoDB Atlas -> Network Access -> allow `0.0.0.0/0` (Render has no fixed IP).
+2. Render Dashboard -> **New -> Blueprint** -> pick this GitHub repo -> it reads `render.yaml`.
+3. Fill in the secrets it asks for: `GROQ_API_KEY`, `MONGODB_URI`, `BOOTSTRAP_ADMIN_PASSWORD`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`. (`SECRET_KEY` is generated.)
+4. Deploy. The build installs `requirements-render.txt` and runs `seed.py`, so SQLite and ChromaDB are built from the repo data.
+
+Free-tier notes: 512 MB RAM, so embeddings use ChromaDB's ONNX copy of all-MiniLM-L6-v2 (`EMBED_BACKEND=onnx`, identical vectors, about 360 MB in total); no Ollama (`FALLBACK_TO_OLLAMA=false`); the service sleeps after 15 minutes idle (first request then takes about a minute); the disk is reset on every deploy/restart, so documents added with `/ingest` and the SQLite audit log last until the next restart (accounts and chats are in MongoDB and stay).
+
 ### Judges' data
 
 ```bash

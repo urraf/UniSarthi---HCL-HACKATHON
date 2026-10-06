@@ -1,0 +1,76 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this repo.
+# Values marked "sync: false" are secrets: Render asks for them when you create the Blueprint.
+services:
+  # ---------- Backend: FastAPI + LangGraph + ChromaDB + SQLite ----------
+  - type: web
+    name: unisarthi-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    # The build also creates SQLite + ChromaDB from the repo data (seed.py), so the server starts ready.
+    buildCommand: pip install -r requirements-render.txt && python scripts/seed.py
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /sources
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: HOME                       # keep the embedding model downloaded at build time for the server
+        value: /opt/render/project/src/.render-home
+      - key: EMBED_BACKEND
+        value: onnx
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: qwen/qwen3.8-27b
+      - key: GROQ_FALLBACK_MODELS
+        value: openai/gpt-oss-120b,openai/gpt-oss-20b
+      - key: FALLBACK_TO_OLLAMA          # no Ollama on Render
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: unisarthi
+      - key: BOOTSTRAP_ADMIN_ID
+        value: admin.dean
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: ALLOWED_EMAIL_DOMAIN
+        value: nsut.ac.in
+      - key: DEV_PRINT_OTP
+        value: "false"
+      - key: CREATE_DEMO_ACCOUNTS
+        value: "false"
+      - key: AUTH_REQUIRED               # false keeps the guide's X-Student-Id contract for the judges
+        value: "false"
+      - key: INGEST_REQUIRES_ADMIN
+        value: "false"
+      - key: CORS_ORIGIN_REGEX
+        value: https://.*\.onrender\.com
+
+  # ---------- Frontend: React (static site) ----------
+  - type: web
+    name: unisarthi-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: unisarthi-api
+          property: host

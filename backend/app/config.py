@@ -33,6 +33,9 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct")
 
 # ---------- Retrieval ----------
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+# How embeddings are computed: "sentence-transformers" (PyTorch) or "onnx" (the same all-MiniLM-L6-v2 model
+# bundled with ChromaDB; no PyTorch, much less memory - used on Render's free tier)
+EMBED_BACKEND = os.getenv("EMBED_BACKEND", "sentence-transformers")
 TOP_K = int(os.getenv("TOP_K", "5"))
 MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.50"))
 
@@ -65,6 +68,8 @@ INGEST_REQUIRES_ADMIN = os.getenv("INGEST_REQUIRES_ADMIN", "false").lower() == "
 
 # ---------- Frontend ----------
 CORS_ORIGINS = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
+# Optional pattern of allowed frontend addresses, e.g. https://.*\.onrender\.com on Render
+CORS_ORIGIN_REGEX = os.getenv("CORS_ORIGIN_REGEX") or None
 
 # The exact sentence the guide requires when we cannot answer (R3)
 NOT_FOUND_MESSAGE = "I could not find this information in the authorised university sources."

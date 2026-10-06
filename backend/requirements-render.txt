@@ -1,0 +1,13 @@
+# Render free tier (512 MB RAM): same as requirements.txt but WITHOUT sentence-transformers/PyTorch.
+# Embeddings use ChromaDB's ONNX copy of all-MiniLM-L6-v2 instead (EMBED_BACKEND=onnx), identical vectors.
+fastapi==0.115.6
+uvicorn==0.34.0
+python-multipart==0.0.20
+pydantic==2.10.4
+langgraph==0.2.62
+chromadb==0.6.3
+pypdf==5.1.0
+posthog<6
+requests==2.32.3
+python-dotenv==1.0.1
+pymongo==4.10.1

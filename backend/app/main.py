@@ -28,7 +28,8 @@ from app.pipeline.understand import student_courses
 from app.schemas import AskRequest, AskResponse, IngestResponse
 
 app = FastAPI(title="UniSarthi - Student Services Assistant", version="1.0")
-app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(CORSMiddleware, allow_origins=config.CORS_ORIGINS, allow_origin_regex=config.CORS_ORIGIN_REGEX,
+                   allow_methods=["*"], allow_headers=["*"])
 db.init_db()
 app.include_router(account_router)
 
